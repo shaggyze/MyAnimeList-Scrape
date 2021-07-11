@@ -1,10 +1,10 @@
-version: 0.0.0.9
+version: 0.0.0.10
 clone_depth: 5
 skip_tags: true
 os: Visual Studio 2015
 
 install:
-- install -y autoit
+- choco install -y autoit
 
 build_script:
 - '"C:\Program Files (x86)\AutoIt3\Aut2Exe\Aut2exe.exe" /in MyAnimeList-JSON.au3 /out MyAnimeList-JSON.exe /icon mal.ico'
