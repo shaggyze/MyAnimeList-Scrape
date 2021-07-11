@@ -1,4 +1,4 @@
-;MyAnimeList-JSON 0.0.0.3 by ShaggyZE
+;MyAnimeList-JSON 0.0.0.4 by ShaggyZE
 #AutoIt3Wrapper_icon=mal.ico
 #pragma compile(inputboxres, true)
 #region Includes

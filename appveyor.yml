@@ -1,7 +1,7 @@
-version: 0.0.0.3
+version: 0.0.0.4
 clone_depth: 5
 skip_tags: true
-image: Script
+image: AutoIt
 
 build_script:
 - '"C:\Program Files (x86)\AutoIt3\Aut2Exe\Aut2exe.exe" MyAnimeList-JSON.au3'
