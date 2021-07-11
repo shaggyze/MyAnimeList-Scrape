@@ -1,7 +1,10 @@
-version: 0.0.0.4
+version: 0.0.0.5
 clone_depth: 5
 skip_tags: true
-image: AutoIt
+os: Visual Studio 2015
+
+install:
+- choco install -y autoit
 
 build_script:
 - '"C:\Program Files (x86)\AutoIt3\Aut2Exe\Aut2exe.exe" MyAnimeList-JSON.au3'
