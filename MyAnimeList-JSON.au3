@@ -1,6 +1,13 @@
-;MyAnimeList-JSON 0.0.0.12 by ShaggyZE
-#AutoIt3Wrapper_icon=mal.ico
-#pragma compile(inputboxres, true)
+;MyAnimeList-JSON by ShaggyZE
+#Region ;**** Directives created by AutoIt3Wrapper_GUI ****
+#AutoIt3Wrapper_Icon=mal.ico
+#AutoIt3Wrapper_Compression=0
+#AutoIt3Wrapper_Res_Comment=MyAnimeList-JSON
+#AutoIt3Wrapper_Res_Description=MyAnimeList-JSON
+#AutoIt3Wrapper_Res_Fileversion=0.0.0.13
+#AutoIt3Wrapper_Res_LegalCopyright=ShaggyZE
+#AutoIt3Wrapper_Res_requestedExecutionLevel=requireAdministrator
+#EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 #region Includes
 #include-once
 #include <Inet.au3>
@@ -32,7 +39,8 @@
 #include <GuiEdit.au3>
 #endregion Includes
 Global $szText, $szText, $szURL, $szID, $sValue1, $sValue2, $szDelay, $Username, $CSS, $Method, $anime_id, $anime_ids, $manga_id, $manga_ids, $data, $o
-Local $hGUI = GUICreate("MyAnimeList-JSON                                                                           To Pause or Close Click the MAL Icon in your System Tray at the Bottom Right", 900, 430, -1, -1, -1)
+Global $version = "0.0.0.13"
+Local $hGUI = GUICreate("MyAnimeList-JSON v" & $version & "                                                          To Pause or Close Click the MAL Icon in your System Tray at the Bottom Right", 900, 430, -1, -1, -1)
 Local $hSysMenu = _GUICtrlMenu_GetSystemMenu($hGUI)
 _GUICtrlMenu_DeleteMenu($hSysMenu, $SC_CLOSE, False)
 _GUICtrlMenu_DeleteMenu($hSysMenu, $SC_MAXIMIZE, False)
@@ -48,7 +56,7 @@ $Progress = GUICtrlCreateLabel("", 60, 40, 100, 20, $SS_CENTER, $WS_EX_TOPMOST)
 GUICtrlSetTip(-1, "")
 GUICtrlCreateLabel("Delay", 5, 60, 65, 20)
 GUICtrlSetTip(-1, "Milliseconds between Scraping MyAnimeList.net")
-$DelayINP = GUICtrlCreateInput("100", 5, 80, 40, 20)
+$DelayINP = GUICtrlCreateInput("2000", 5, 80, 40, 20)
 GUICtrlSetTip(-1, "Milliseconds between Scraping MyAnimeList.net")
 GUICtrlCreateLabel("Template", 5, 110, 65, 20)
 GUICtrlSetTip(-1, "CSS Template")
@@ -98,7 +106,7 @@ Sleep(10)
 				FileWrite($szFile2, $szText)
 				ToolTip("Scraping MAL data...", $x, $y)
 				Sleep(2000)
-				_ScrapeMALAnime()
+				_ScrapeMAL("anime")
 				FileDelete($szFile1)
 				FileDelete($szFile3)
 			ElseIf $Method = "MAL-Manga" Then
@@ -112,7 +120,7 @@ Sleep(10)
 				FileWrite($szFile2, $szText)
 				ToolTip("Scraping MAL data...", $x, $y)
 				Sleep(2000)
-				_ScrapeMALManga()
+				_ScrapeMAL("manga")
 				FileDelete($szFile1)
 				FileDelete($szFile3)
 			ElseIf $Method = "load.json-Anime-MAL" Then
@@ -156,68 +164,6 @@ $szText1 = StringReplace($szText1, "[DESC]", $parseStr)
 FileWrite($szFile2, $szText1)
 EndFunc   ;==>_ParseHTML
 
-Func _ScrapeMALAnime()
-GUICtrlSetData($OutputINP, "")
-ToolTip("Scanning from " & $sValue1 & " to " & $sValue2, $x, $y)
-Sleep (2000)
-While $sValue1 <= $sValue2
-	$szID = $sValue1
-	GUICtrlSetData($Progress, $sValue1 & " of " & $sValue2)
-	$szURL = "https://myanimelist.net/anime/" & $szID
-	ToolTip($szID & " Scanned.", $x, $y)
-	Sleep(GUICtrlRead($DelayINP))
-    $source = _INetGetSource($szURL)
-    FileDelete($szFile3)
-	FileWrite(@ScriptDir & "\" & $szFile3, $source)
-    Local $read = FileRead(@ScriptDir & "\" & $szFile3)
-    Local $readtitle = _StringBetween($read, '<p itemprop="description">', '</p>')
-    If IsArray($readtitle) Then
-		_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
-		_ParseHTML($szID)
-    Else
-		Local $readtitle = _StringBetween($read, 'Synopsis</h2></div>', '<')
-		If IsArray($readtitle) Then
-			_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
-			_ParseHTML($szID)
-		EndIf
-    EndIf
-	Local $read2 = FileRead(@ScriptDir & "\" & $szFile2)
-	GUICtrlSetData($OutputINP, $read2)
-	$sValue1 = $sValue1 + 1
-WEnd
-EndFunc   ;==>_ScrapeMALAnime
-
-Func _ScrapeMALManga()
-GUICtrlSetData($OutputINP, "")
-ToolTip("Scanning from " & $sValue1 & " to " & $sValue2, $x, $y)
-Sleep (2000)
-While $sValue1 <= $sValue2
-	$szID = $sValue1
-	GUICtrlSetData($Progress, $sValue1 & " of " & $sValue2)
-	$szURL = "https://myanimelist.net/manga/" & $szID
-	ToolTip($szID & " Scanned.", $x, $y)
-	Sleep(GUICtrlRead($DelayINP))
-    $source = _INetGetSource($szURL)
-    FileDelete($szFile3)
-	FileWrite(@ScriptDir & "\" & $szFile3, $source)
-    Local $read = FileRead(@ScriptDir & "\" & $szFile3)
-    Local $readtitle = _StringBetween($read, '<span itemprop="description">', '</span>') ;read URL and title from file
-    If IsArray($readtitle) Then
-		_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
-		_ParseHTML($szID)
-    Else
-		Local $readtitle = _StringBetween($read, '</div>Synopsis</h2>', '<') ;read URL and title from file
-		If IsArray($readtitle) Then
-			_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
-			_ParseHTML($szID)
-		EndIf
-    EndIf
-	Local $read2 = FileRead(@ScriptDir & "\" & $szFile2)
-	GUICtrlSetData($OutputINP, $read2)
-	$sValue1 = $sValue1 + 1
-WEnd
-EndFunc   ;==>_ScrapeMALManga
-
 Func Parse($sTemp,$key)
 $res = StringRegExp($sTemp, '\W' & $key & '\W+(\d+)\W+\W+([^"]+)', 3)
 Global $array[UBound($res)/2][2]
@@ -230,6 +176,99 @@ EndIf
 Next
 ;_ArrayDisplay($array)
 EndFunc   ;==>Parse
+
+Func _getData($o,$list)
+While $data = ""
+	$Username = GUICtrlRead($UsernameINP)
+	$URL = "https://myanimelist.net/" & $list & "list/" & $Username & "/load.json?status=7&offset=" & $o
+	Sleep(5000)
+	$data = _INetGetSource($URL)
+	ConsoleWrite("data = " & $data & @CRLF)
+WEnd
+EndFunc   ;==>getData
+
+Func _ScrapeMAL($list)
+GUICtrlSetData($OutputINP, "")
+ToolTip("Scanning from " & $sValue1 & " to " & $sValue2, $x, $y)
+Sleep (2000)
+While $sValue1 <= $sValue2
+	$szID = $sValue1
+	GUICtrlSetData($Progress, $sValue1 & " of " & $sValue2)
+	$szURL = "https://myanimelist.net/" & $list & "/" & $szID
+	ToolTip($szID & " Scanned.", $x, $y)
+	Sleep(GUICtrlRead($DelayINP))
+    $source = _INetGetSource($szURL)
+    FileDelete($szFile3)
+	FileWrite(@ScriptDir & "\" & $szFile3, $source)
+    Local $read = FileRead(@ScriptDir & "\" & $szFile3)
+	If $list = "anime" then
+	    Local $readtitle = _StringBetween($read, '<p itemprop="description">', '</p>')
+    If IsArray($readtitle) Then
+		_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
+		_ParseHTML($szID)
+    Else
+		Local $readtitle = _StringBetween($read, 'Synopsis</h2></div>', '<')
+		If IsArray($readtitle) Then
+			_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
+			_ParseHTML($szID)
+		EndIf
+    EndIf
+	ElseIf $list = "manga" then
+    Local $readtitle = _StringBetween($read, '<span itemprop="description">', '</span>') ;read URL and title from file
+    If IsArray($readtitle) Then
+		_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
+		_ParseHTML($szID)
+    Else
+		Local $readtitle = _StringBetween($read, '</div>Synopsis</h2>', '<') ;read URL and title from file
+		If IsArray($readtitle) Then
+			_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
+			_ParseHTML($szID)
+		EndIf
+    EndIf
+	EndIf
+	Local $read2 = FileRead(@ScriptDir & "\" & $szFile2)
+	GUICtrlSetData($OutputINP, $read2)
+	$sValue1 = $sValue1 + 1
+WEnd
+EndFunc   ;==>_ScrapeMAL
+
+Func _ScrapeloadjsonMAL($id,$list)
+	$szURL = "https://myanimelist.net/" & $list & "/" & $id
+	ToolTip($id & " Scanned.", $x, $y)
+	Sleep(GUICtrlRead($DelayINP))
+    $source = _INetGetSource($szURL)
+	; check if source is spam triggered
+    FileDelete($szFile3)
+	FileWrite(@ScriptDir & "\" & $szFile3, $source)
+    Local $read = FileRead(@ScriptDir & "\" & $szFile3)
+	If $list = "anime" then
+	Local $readtitle = _StringBetween($read, '<p itemprop="description">', '</p>')
+    If IsArray($readtitle) Then
+		_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
+		_ParseHTML($id)
+    Else
+		Local $readtitle = _StringBetween($read, 'Synopsis</h2></div>', '<')
+		If IsArray($readtitle) Then
+			_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
+			_ParseHTML($id)
+		EndIf
+    EndIf
+	ElseIf $list = "manga" then
+    Local $readtitle = _StringBetween($read, '<span itemprop="description">', '</span>') ;read URL and title from file
+    If IsArray($readtitle) Then
+		_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
+		_ParseHTML($id)
+    Else
+		Local $readtitle = _StringBetween($read, '</div>Synopsis</h2>', '<') ;read URL and title from file
+		If IsArray($readtitle) Then
+			_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
+			_ParseHTML($id)
+		EndIf
+    EndIf
+	EndIf
+	Local $read2 = FileRead(@ScriptDir & "\" & $szFile2)
+	GUICtrlSetData($OutputINP, $read2)
+EndFunc   ;==>_ScrapeloadjsonMAL
 
 Func _ScrapeloadjsonAnimeMAL()
 				FileDelete($szFile2)
@@ -255,65 +294,9 @@ _GetloadjsonMangaMAL()
 				FileDelete($szFile3)
 EndFunc   ;==>_ScrapeloadjsonMangaMAL
 
-Func _getData($o,$list)
-While $data = ""
-	$Username = GUICtrlRead($UsernameINP)
-	$URL = "https://myanimelist.net/" & $list & "list/" & $Username & "/load.json?status=7&offset=" & $o
-	Sleep(5000)
-	$data = _INetGetSource($URL)
-	ConsoleWrite("data = " & $data & @CRLF)
-WEnd
-EndFunc
-
-Func _ScrapMALloadjson($id,$list)
-If $list = "anime" then
-	$szURL = "https://myanimelist.net/anime/" & $id
-	ToolTip($id & " Scanned.", $x, $y)
-	Sleep(GUICtrlRead($DelayINP))
-    $source = _INetGetSource($szURL)
-    FileDelete($szFile3)
-	FileWrite(@ScriptDir & "\" & $szFile3, $source)
-    Local $read = FileRead(@ScriptDir & "\" & $szFile3)
-    Local $readtitle = _StringBetween($read, '<p itemprop="description">', '</p>')
-    If IsArray($readtitle) Then
-		_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
-		_ParseHTML($id)
-    Else
-		Local $readtitle = _StringBetween($read, 'Synopsis</h2></div>', '<')
-		If IsArray($readtitle) Then
-			_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
-			_ParseHTML($id)
-		EndIf
-    EndIf
-	Local $read2 = FileRead(@ScriptDir & "\" & $szFile2)
-	GUICtrlSetData($OutputINP, $read2)
-Else
-	$szURL = "https://myanimelist.net/manga/" & $id
-	ToolTip($id & " Scanned.", $x, $y)
-	Sleep(GUICtrlRead($DelayINP))
-    $source = _INetGetSource($szURL)
-    FileDelete($szFile3)
-	FileWrite(@ScriptDir & "\" & $szFile3, $source)
-    Local $read = FileRead(@ScriptDir & "\" & $szFile3)
-    Local $readtitle = _StringBetween($read, '<span itemprop="description">', '</span>') ;read URL and title from file
-    If IsArray($readtitle) Then
-		_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
-		_ParseHTML($id)
-    Else
-		Local $readtitle = _StringBetween($read, '</div>Synopsis</h2>', '<') ;read URL and title from file
-		If IsArray($readtitle) Then
-			_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
-			_ParseHTML($id)
-		EndIf
-    EndIf
-	Local $read2 = FileRead(@ScriptDir & "\" & $szFile2)
-	GUICtrlSetData($OutputINP, $read2)
-EndIf
-EndFunc
-
 Func _GetloadjsonAnimeMAL()
 Local $count
-Do
+While Not $data  = "[]"
 	$data = ""
 	_getData($o,"anime")
 	;GUICtrlSetData($OutputINP, $data)
@@ -332,17 +315,17 @@ $count=$count + 1
 ConsoleWrite($count & " " & $o & @CRLF)
 ConsoleWrite($anime_ids & @CRLF)
 ;If @error Then ExitLoop 1
-Until $data  = "[]"
+WEnd
 Local $anime_ids_array = StringSplit($anime_ids,",")
 For $scrape = 1 to UBound($anime_ids_array)-1
-	GUICtrlSetData($Progress, $scrape & " of " & UBound($anime_ids_array)-1)
-	_ScrapMALloadjson($anime_ids_array[$scrape],"anime")
+	GUICtrlSetData($Progress, $scrape-1 & " of " & UBound($anime_ids_array)-2)
+	_ScrapeloadjsonMAL($anime_ids_array[$scrape],"anime")
 Next
 EndFunc   ;==>_GetloadjsonAnimeMAL
 
 Func _GetloadjsonMangaMAL()
 Local $count
-Do
+While Not $data  = "[]"
 	$data = ""
 	_getData($o,"manga")
 	;GUICtrlSetData($OutputINP, $data)
@@ -361,10 +344,10 @@ $count=$count + 1
 ConsoleWrite($count & " " & $o & @CRLF)
 ConsoleWrite($manga_ids & @CRLF)
 ;If @error Then ExitLoop 1
-Until $data  = "[]"
+WEnd
 Local $manga_ids_array = StringSplit($manga_ids,",")
 For $scrape = 1 to UBound($manga_ids_array)-1
-	GUICtrlSetData($Progress, $scrape & " of " & UBound($manga_ids_array)-1)
-	_ScrapMALloadjson($manga_ids_array[$scrape],"manga")
+	GUICtrlSetData($Progress, $scrape-1 & " of " & UBound($manga_ids_array)-2)
+	_ScrapeloadjsonMAL($manga_ids_array[$scrape],"manga")
 Next
 EndFunc   ;==>_GetloadjsonMangaMAL
