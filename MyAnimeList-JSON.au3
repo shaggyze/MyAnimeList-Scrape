@@ -1,4 +1,4 @@
-;MyAnimeList-JSON 0.0.0.11 by ShaggyZE
+;MyAnimeList-JSON 0.0.0.12 by ShaggyZE
 #AutoIt3Wrapper_icon=mal.ico
 #pragma compile(inputboxres, true)
 #region Includes
@@ -48,7 +48,7 @@ $Progress = GUICtrlCreateLabel("", 60, 40, 100, 20, $SS_CENTER, $WS_EX_TOPMOST)
 GUICtrlSetTip(-1, "")
 GUICtrlCreateLabel("Delay", 5, 60, 65, 20)
 GUICtrlSetTip(-1, "Milliseconds between Scraping MyAnimeList.net")
-$DelayINP = GUICtrlCreateInput("2000", 5, 80, 40, 20)
+$DelayINP = GUICtrlCreateInput("100", 5, 80, 40, 20)
 GUICtrlSetTip(-1, "Milliseconds between Scraping MyAnimeList.net")
 GUICtrlCreateLabel("Template", 5, 110, 65, 20)
 GUICtrlSetTip(-1, "CSS Template")
@@ -265,21 +265,10 @@ While $data = ""
 WEnd
 EndFunc
 
-Func _GetloadjsonAnimeMAL()
-Local $count
-Do
-	_getData($o,"anime")
-	;GUICtrlSetData($OutputINP, $data)
-	Parse($data,"anime_id")
-	;If Not IsArray($array) Then ExitLoop 1
-	;_ArrayDisplay($array)
-	For $gather = 0 to UBound($array)-1
-	GUICtrlSetData($Progress, "Scanned " & $count)
-$anime_id = $array[$gather][0]
-;If $anime_id  = "" Then ExitLoop 1
-
-	$szURL = "https://myanimelist.net/anime/" & $anime_id
-	ToolTip($anime_id & " Scanned.", $x, $y)
+Func _ScrapMALloadjson($id,$list)
+If $list = "anime" then
+	$szURL = "https://myanimelist.net/anime/" & $id
+	ToolTip($id & " Scanned.", $x, $y)
 	Sleep(GUICtrlRead($DelayINP))
     $source = _INetGetSource($szURL)
     FileDelete($szFile3)
@@ -288,17 +277,54 @@ $anime_id = $array[$gather][0]
     Local $readtitle = _StringBetween($read, '<p itemprop="description">', '</p>')
     If IsArray($readtitle) Then
 		_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
-		_ParseHTML($anime_id)
+		_ParseHTML($id)
     Else
 		Local $readtitle = _StringBetween($read, 'Synopsis</h2></div>', '<')
 		If IsArray($readtitle) Then
 			_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
-			_ParseHTML($anime_id)
+			_ParseHTML($id)
 		EndIf
     EndIf
 	Local $read2 = FileRead(@ScriptDir & "\" & $szFile2)
 	GUICtrlSetData($OutputINP, $read2)
-$anime_ids = $anime_ids & $anime_id & ", "
+Else
+	$szURL = "https://myanimelist.net/manga/" & $id
+	ToolTip($id & " Scanned.", $x, $y)
+	Sleep(GUICtrlRead($DelayINP))
+    $source = _INetGetSource($szURL)
+    FileDelete($szFile3)
+	FileWrite(@ScriptDir & "\" & $szFile3, $source)
+    Local $read = FileRead(@ScriptDir & "\" & $szFile3)
+    Local $readtitle = _StringBetween($read, '<span itemprop="description">', '</span>') ;read URL and title from file
+    If IsArray($readtitle) Then
+		_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
+		_ParseHTML($id)
+    Else
+		Local $readtitle = _StringBetween($read, '</div>Synopsis</h2>', '<') ;read URL and title from file
+		If IsArray($readtitle) Then
+			_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
+			_ParseHTML($id)
+		EndIf
+    EndIf
+	Local $read2 = FileRead(@ScriptDir & "\" & $szFile2)
+	GUICtrlSetData($OutputINP, $read2)
+EndIf
+EndFunc
+
+Func _GetloadjsonAnimeMAL()
+Local $count
+Do
+	$data = ""
+	_getData($o,"anime")
+	;GUICtrlSetData($OutputINP, $data)
+	Parse($data,"anime_id")
+	;If Not IsArray($array) Then ExitLoop 1
+	;_ArrayDisplay($array)
+	For $gather = 0 to UBound($array)-1
+$anime_id = $array[$gather][0]
+If $anime_id  = "" Then ExitLoop 1
+
+$anime_ids = $anime_ids & $anime_id & ","
 $count=$count + 1
     ;If @error Then ExitLoop 1
 	Next
@@ -307,6 +333,11 @@ ConsoleWrite($count & " " & $o & @CRLF)
 ConsoleWrite($anime_ids & @CRLF)
 ;If @error Then ExitLoop 1
 Until $data  = "[]"
+Local $anime_ids_array = StringSplit($anime_ids,",")
+For $scrape = 1 to UBound($anime_ids_array)-1
+	GUICtrlSetData($Progress, $scrape & " of " & UBound($anime_ids_array)-1)
+	_ScrapMALloadjson($anime_ids_array[$scrape],"anime")
+Next
 EndFunc   ;==>_GetloadjsonAnimeMAL
 
 Func _GetloadjsonMangaMAL()
@@ -319,30 +350,10 @@ Do
 	;If Not IsArray($array) Then ExitLoop 1
 	;_ArrayDisplay($array)
 	For $gather = 0 to UBound($array)-1
-	GUICtrlSetData($Progress, "Scanned " & $count)
 $manga_id = $array[$gather][0]
-;If $manga_id  = "" Then ExitLoop 1
-	$szURL = "https://myanimelist.net/manga/" & $manga_id
-	ToolTip($manga_id & " Scanned.", $x, $y)
-	Sleep(GUICtrlRead($DelayINP))
-    $source = _INetGetSource($szURL)
-    FileDelete($szFile3)
-	FileWrite(@ScriptDir & "\" & $szFile3, $source)
-    Local $read = FileRead(@ScriptDir & "\" & $szFile3)
-    Local $readtitle = _StringBetween($read, '<span itemprop="description">', '</span>') ;read URL and title from file
-    If IsArray($readtitle) Then
-		_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
-		_ParseHTML($manga_id)
-    Else
-		Local $readtitle = _StringBetween($read, '</div>Synopsis</h2>', '<') ;read URL and title from file
-		If IsArray($readtitle) Then
-			_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
-			_ParseHTML($manga_id)
-		EndIf
-    EndIf
-	Local $read2 = FileRead(@ScriptDir & "\" & $szFile2)
-	GUICtrlSetData($OutputINP, $read2)
-$manga_ids = $manga_ids & $manga_id & ", "
+If $manga_id  = "" Then ExitLoop 1
+
+$manga_ids = $manga_ids & $manga_id & ","
 $count=$count + 1
     ;If @error Then ExitLoop 1
 	Next
@@ -351,4 +362,9 @@ ConsoleWrite($count & " " & $o & @CRLF)
 ConsoleWrite($manga_ids & @CRLF)
 ;If @error Then ExitLoop 1
 Until $data  = "[]"
+Local $manga_ids_array = StringSplit($manga_ids,",")
+For $scrape = 1 to UBound($manga_ids_array)-1
+	GUICtrlSetData($Progress, $scrape & " of " & UBound($manga_ids_array)-1)
+	_ScrapMALloadjson($manga_ids_array[$scrape],"manga")
+Next
 EndFunc   ;==>_GetloadjsonMangaMAL
