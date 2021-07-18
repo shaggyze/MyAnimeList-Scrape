@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_Compression=0
 #AutoIt3Wrapper_Res_Comment=MyAnimeList-JSON
 #AutoIt3Wrapper_Res_Description=MyAnimeList-JSON
-#AutoIt3Wrapper_Res_Fileversion=0.0.0.13
+#AutoIt3Wrapper_Res_Fileversion=0.0.0.14
 #AutoIt3Wrapper_Res_LegalCopyright=ShaggyZE
 #AutoIt3Wrapper_Res_requestedExecutionLevel=requireAdministrator
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -39,7 +39,7 @@
 #include <GuiEdit.au3>
 #endregion Includes
 Global $szText, $szText, $szURL, $szID, $sValue1, $sValue2, $szDelay, $Username, $CSS, $Method, $anime_id, $anime_ids, $manga_id, $manga_ids, $data, $o
-Global $version = "0.0.0.13"
+Global $version = "0.0.0.14"
 Local $hGUI = GUICreate("MyAnimeList-JSON v" & $version & "                                                          To Pause or Close Click the MAL Icon in your System Tray at the Bottom Right", 900, 430, -1, -1, -1)
 Local $hSysMenu = _GUICtrlMenu_GetSystemMenu($hGUI)
 _GUICtrlMenu_DeleteMenu($hSysMenu, $SC_CLOSE, False)
@@ -296,25 +296,26 @@ EndFunc   ;==>_ScrapeloadjsonMangaMAL
 
 Func _GetloadjsonAnimeMAL()
 Local $count
-While Not $data  = "[]"
+While 1
 	$data = ""
 	_getData($o,"anime")
+	If $data = "[]" Then ExitLoop 1
 	;GUICtrlSetData($OutputINP, $data)
 	Parse($data,"anime_id")
-	;If Not IsArray($array) Then ExitLoop 1
+	If Not IsArray($array) Then ExitLoop 1
 	;_ArrayDisplay($array)
 	For $gather = 0 to UBound($array)-1
 $anime_id = $array[$gather][0]
-If $anime_id  = "" Then ExitLoop 1
+If $anime_id  = "" Then ExitLoop 2
 
 $anime_ids = $anime_ids & $anime_id & ","
 $count=$count + 1
-    ;If @error Then ExitLoop 1
+    If @error Then ExitLoop 2
 	Next
 	$o += 300
 ConsoleWrite($count & " " & $o & @CRLF)
 ConsoleWrite($anime_ids & @CRLF)
-;If @error Then ExitLoop 1
+If @error Then ExitLoop 1
 WEnd
 Local $anime_ids_array = StringSplit($anime_ids,",")
 For $scrape = 1 to UBound($anime_ids_array)-1
@@ -325,25 +326,26 @@ EndFunc   ;==>_GetloadjsonAnimeMAL
 
 Func _GetloadjsonMangaMAL()
 Local $count
-While Not $data  = "[]"
+While 1
 	$data = ""
 	_getData($o,"manga")
+	If $data = "[]" Then ExitLoop 1
 	;GUICtrlSetData($OutputINP, $data)
 	Parse($data,"manga_id")
-	;If Not IsArray($array) Then ExitLoop 1
+	If Not IsArray($array) Then ExitLoop 1
 	;_ArrayDisplay($array)
 	For $gather = 0 to UBound($array)-1
 $manga_id = $array[$gather][0]
-If $manga_id  = "" Then ExitLoop 1
+If $manga_id  = "" Then ExitLoop 2
 
 $manga_ids = $manga_ids & $manga_id & ","
 $count=$count + 1
-    ;If @error Then ExitLoop 1
+    If @error Then ExitLoop 2
 	Next
 	$o += 300
 ConsoleWrite($count & " " & $o & @CRLF)
 ConsoleWrite($manga_ids & @CRLF)
-;If @error Then ExitLoop 1
+If @error Then ExitLoop 1
 WEnd
 Local $manga_ids_array = StringSplit($manga_ids,",")
 For $scrape = 1 to UBound($manga_ids_array)-1
