@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_Compression=0
 #AutoIt3Wrapper_Res_Comment=MyAnimeList-JSON
 #AutoIt3Wrapper_Res_Description=MyAnimeList-JSON
-#AutoIt3Wrapper_Res_Fileversion=0.0.0.14
+#AutoIt3Wrapper_Res_Fileversion=0.0.0.16
 #AutoIt3Wrapper_Res_LegalCopyright=ShaggyZE
 #AutoIt3Wrapper_Res_requestedExecutionLevel=requireAdministrator
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -39,7 +39,7 @@
 #include <GuiEdit.au3>
 #endregion Includes
 Global $szText, $szText, $szURL, $szID, $sValue1, $sValue2, $szDelay, $Username, $CSS, $Method, $anime_id, $anime_ids, $manga_id, $manga_ids, $data, $o, $mode
-Global $version = "0.0.0.15"
+Global $version = "0.0.0.16"
 Local $hGUI = GUICreate("MyAnimeList-JSON v" & $version & "                                                          To Pause or Close Click the MAL Icon in your System Tray at the Bottom Right", 900, 430, -1, -1, -1)
 Local $hSysMenu = _GUICtrlMenu_GetSystemMenu($hGUI)
 _GUICtrlMenu_DeleteMenu($hSysMenu, $SC_CLOSE, False)
@@ -49,6 +49,7 @@ GUISetIcon(@ScriptDir & "\mal.ico")
 $ButtonS = GUICtrlCreateButton("Start", 5, 5, 65, 20)
 GUICtrlSetTip(-1, "Click to Start")
 $UsernameINP = GUICtrlCreateInput("ShaggyZE", 80, 5, 100, 20)
+GUICtrlSetState (-1,$GUI_Disable)
 GUICtrlSetTip(-1, "Your Mal Username")
 GUICtrlCreateLabel("Output", 225, 10, 65, 20)
 GUICtrlSetTip(-1, "This is where your CSS code will be")
@@ -84,8 +85,9 @@ $szFile3 = "scrape.html"
 $x = @DesktopWidth - 150
 $y = @DesktopHeight - 62.5
 GUISetState(@SW_SHOW, $hGUI)
-While GUIGetMsg() <> $GUI_EVENT_CLOSE
-Sleep(10)
+
+While 1
+
 	$nMsg = GUIGetMsg()
 
 	Switch $nMsg
@@ -131,6 +133,79 @@ Sleep(10)
 				$data = ""
 				$o = 0
 				_ScrapeloadjsonMangaMAL()
+			ElseIf $Method = "load.json-Anime-Jikan" Then
+				MsgBox("","MyAnimeList-JSON v" & $version,"This method has not yet been added")
+				GUICtrlSetData($methodCMB, "MAL-Anime")
+				GUICtrlSetState ($UsernameINP,$GUI_Disable)
+				GUICtrlSetState ($FromINP,$GUI_Enable)
+				GUICtrlSetState ($ToINP,$GUI_Enable)
+			ElseIf $Method = "load.json-Manga-Jikan" Then
+				MsgBox("","MyAnimeList-JSON v" & $version,"This method has not yet been added")
+				GUICtrlSetData($methodCMB, "MAL-Anime")
+				GUICtrlSetState ($UsernameINP,$GUI_Disable)
+				GUICtrlSetState ($FromINP,$GUI_Enable)
+				GUICtrlSetState ($ToINP,$GUI_Enable)
+			ElseIf $Method = "load.json-Anime-JSON" Then
+				MsgBox("","MyAnimeList-JSON v" & $version,"This method has not yet been added")
+				GUICtrlSetData($methodCMB, "MAL-Anime")
+				GUICtrlSetState ($UsernameINP,$GUI_Disable)
+				GUICtrlSetState ($FromINP,$GUI_Enable)
+				GUICtrlSetState ($ToINP,$GUI_Enable)
+			ElseIf $Method = "load.json-Manga-JSON" Then
+				MsgBox("","MyAnimeList-JSON v" & $version,"This method has not yet been added")
+				GUICtrlSetData($methodCMB, "MAL-Anime")
+				GUICtrlSetState ($UsernameINP,$GUI_Disable)
+				GUICtrlSetState ($FromINP,$GUI_Enable)
+				GUICtrlSetState ($ToINP,$GUI_Enable)
+			Else
+				MsgBox("","MyAnimeList-JSON v" & $version,"This method has not yet been added")
+				GUICtrlSetData($methodCMB, "MAL-Anime")
+				GUICtrlSetState ($UsernameINP,$GUI_Disable)
+				GUICtrlSetState ($FromINP,$GUI_Enable)
+				GUICtrlSetState ($ToINP,$GUI_Enable)
+			EndIf
+		Case $methodCMB
+			$Method = GUICtrlRead($methodCMB)
+			If $Method = "MAL-Anime" Then
+				GUICtrlSetState ($UsernameINP,$GUI_Disable)
+				GUICtrlSetState ($FromINP,$GUI_Enable)
+				GUICtrlSetState ($ToINP,$GUI_Enable)
+			ElseIf $Method = "MAL-Manga" Then
+				GUICtrlSetState ($UsernameINP,$GUI_Disable)
+				GUICtrlSetState ($FromINP,$GUI_Enable)
+				GUICtrlSetState ($ToINP,$GUI_Enable)
+			ElseIf $Method = "load.json-Anime-MAL" Then
+				GUICtrlSetState ($UsernameINP,$GUI_Enable)
+				GUICtrlSetState ($FromINP,$GUI_Disable)
+				GUICtrlSetState ($ToINP,$GUI_Disable)
+			ElseIf $Method = "load.json-Manga-MAL" Then
+				GUICtrlSetState ($UsernameINP,$GUI_Enable)
+				GUICtrlSetState ($FromINP,$GUI_Disable)
+				GUICtrlSetState ($ToINP,$GUI_Disable)
+			ElseIf $Method = "load.json-Anime-Jikan" Then
+				MsgBox("","MyAnimeList-JSON v" & $version,"This method has not yet been added")
+				GUICtrlSetData($methodCMB, "MAL-Anime")
+				GUICtrlSetState ($UsernameINP,$GUI_Disable)
+				GUICtrlSetState ($FromINP,$GUI_Enable)
+				GUICtrlSetState ($ToINP,$GUI_Enable)
+			ElseIf $Method = "load.json-Manga-Jikan" Then
+				MsgBox("","MyAnimeList-JSON v" & $version,"This method has not yet been added")
+				GUICtrlSetData($methodCMB, "MAL-Anime")
+				GUICtrlSetState ($UsernameINP,$GUI_Disable)
+				GUICtrlSetState ($FromINP,$GUI_Enable)
+				GUICtrlSetState ($ToINP,$GUI_Enable)
+			ElseIf $Method = "load.json-Anime-JSON" Then
+				MsgBox("","MyAnimeList-JSON v" & $version,"This method has not yet been added")
+				GUICtrlSetData($methodCMB, "MAL-Anime")
+				GUICtrlSetState ($UsernameINP,$GUI_Disable)
+				GUICtrlSetState ($FromINP,$GUI_Enable)
+				GUICtrlSetState ($ToINP,$GUI_Enable)
+			ElseIf $Method = "load.json-Manga-JSON" Then
+				MsgBox("","MyAnimeList-JSON v" & $version,"This method has not yet been added")
+				GUICtrlSetData($methodCMB, "MAL-Anime")
+				GUICtrlSetState ($UsernameINP,$GUI_Disable)
+				GUICtrlSetState ($FromINP,$GUI_Enable)
+				GUICtrlSetState ($ToINP,$GUI_Enable)
 			EndIf
 		Case Else
 			;MsgBox(0,"",$nMsg)
