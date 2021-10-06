@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_Compression=0
 #AutoIt3Wrapper_Res_Comment=MyAnimeList-JSON
 #AutoIt3Wrapper_Res_Description=MyAnimeList-JSON
-#AutoIt3Wrapper_Res_Fileversion=0.0.0.17
+#AutoIt3Wrapper_Res_Fileversion=0.0.0.18
 #AutoIt3Wrapper_Res_LegalCopyright=ShaggyZE
 #AutoIt3Wrapper_Res_requestedExecutionLevel=requireAdministrator
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -313,6 +313,7 @@ $parseStr =  StringReplace($parseStr, "&mdash;", "-")
 $parseStr =  StringReplace($parseStr, "<span style=font-size: 90%;>", "")
 $parseStr =  StringReplace($parseStr, "/moreinfo>", " ")
 $parseStr =  StringReplace($parseStr, "<!--link-->" & $id & "/", "")
+$parseStr =  StringReplace($parseStr, " <a href=/dbchanges.php?aid=" & $id & "&t=synopsis>here.", "")
 $parseStr =  StringReplace($parseStr, "<a href=http://myanimelist.net/manga/" & $id & "/-/moreinfo rel=nofollow>", "")
 $parseStr =  StringReplace($parseStr, "<a href=http://myanimelist.net/manga/" & $id & "/-/moreinfo rel=nofollow>", "")
 $parseStr =  StringReplace($parseStr, "<a href=http://myanimelist.net/anime/" & $id & "/-/moreinfo rel=nofollow>", "")
@@ -368,7 +369,7 @@ While Number($sValue1) <= Number($sValue2)
 			_ScrapeMALMangaSynopsis()
 		EndIf
 	Else
-		$sValue1 = $sValue1 - 1
+		;$sValue1 = $sValue1 - 1
 		;MsgBox($MB_OK + $MB_ICONINFORMATION, 'SUCCESS', '$sURL_Status=' & $sURL_Status)
 	EndIf
 	$read2 = FileRead(@ScriptDir & "\" & $szFile2)
@@ -386,6 +387,7 @@ If IsArray($readtitle) Then
 	_ParseHTML($id)
 	$szText1 = @CRLF & $Template
 	$szText1 = StringReplace($szText1, "[ID]", $id)
+	$szText1 = StringReplace($szText1, "[TYPE]", "anime")
 	$szText1 = StringReplace($szText1, "[DESC]", $parseStr)
 	FileWrite($szFile2, $szText1)
 Else
@@ -396,6 +398,7 @@ $readtitle = _StringBetween($read, 'Synopsis</h2></div>', '<')
 		_ParseHTML($id)
 		$szText1 = @CRLF & $Template
 		$szText1 = StringReplace($szText1, "[ID]", $id)
+		$szText1 = StringReplace($szText1, "[TYPE]", "anime")
 		$szText1 = StringReplace($szText1, "[DESC]", $parseStr)
 		FileWrite($szFile2, $szText1)
 	Else
@@ -413,6 +416,7 @@ If IsArray($readtitle) Then
 	_ParseHTML($id)
 	$szText1 = @CRLF & $Template
 	$szText1 = StringReplace($szText1, "[ID]", $id)
+	$szText1 = StringReplace($szText1, "[TYPE]", "manga")
 	$szText1 = StringReplace($szText1, "[DESC]", $parseStr)
 	FileWrite($szFile2, $szText1)
 Else
@@ -423,6 +427,7 @@ Else
 		_ParseHTML($id)
 		$szText1 = @CRLF & $Template
 		$szText1 = StringReplace($szText1, "[ID]", $id)
+		$szText1 = StringReplace($szText1, "[TYPE]", "manga")
 		$szText1 = StringReplace($szText1, "[DESC]", $parseStr)
 		FileWrite($szFile2, $szText1)
 	Else
@@ -433,6 +438,7 @@ Else
 			_ParseHTML($id)
 			$szText1 = @CRLF & $Template
 			$szText1 = StringReplace($szText1, "[ID]", $id)
+			$szText1 = StringReplace($szText1, "[TYPE]", "manga")
 			$szText1 = StringReplace($szText1, "[DESC]", $parseStr)
 			FileWrite($szFile2, $szText1)
 		Else
@@ -467,6 +473,7 @@ If IsArray($readtitle) Then
 	_ParseHTML($id)
 	$szText1 = @CRLF & $Template
 	$szText1 = StringReplace($szText1, "[ID]", $id)
+	$szText1 = StringReplace($szText1, "[TYPE]", "anime")
 	$szText1 = StringReplace($szText1, "[DESC]", $parseStr)
 	FileWrite($szFile2, $szText1)
 Else
@@ -477,6 +484,7 @@ Else
 		_ParseHTML($id)
 		$szText1 = @CRLF & $Template
 		$szText1 = StringReplace($szText1, "[ID]", $id)
+		$szText1 = StringReplace($szText1, "[TYPE]", "anime")
 		$szText1 = StringReplace($szText1, "[DESC]", $parseStr)
 		FileWrite($szFile2, $szText1)
 	Else
@@ -493,6 +501,7 @@ If IsArray($readtitle) Then
 	_ParseHTML($id)
 	$szText1 = @CRLF & $Template
 	$szText1 = StringReplace($szText1, "[ID]", $id)
+	$szText1 = StringReplace($szText1, "[TYPE]", "manga")
 	$szText1 = StringReplace($szText1, "[DESC]", $parseStr)
 	FileWrite($szFile2, $szText1)
 Else
@@ -503,6 +512,7 @@ Else
 		_ParseHTML($id)
 		$szText1 = @CRLF & $Template
 		$szText1 = StringReplace($szText1, "[ID]", $id)
+		$szText1 = StringReplace($szText1, "[TYPE]", "manga")
 		$szText1 = StringReplace($szText1, "[DESC]", $parseStr)
 		FileWrite($szFile2, $szText1)
 	Else
@@ -513,6 +523,7 @@ Else
 			_ParseHTML($id)
 			$szText1 = @CRLF & $Template
 			$szText1 = StringReplace($szText1, "[ID]", $id)
+			$szText1 = StringReplace($szText1, "[TYPE]", "manga")
 			$szText1 = StringReplace($szText1, "[DESC]", $parseStr)
 			FileWrite($szFile2, $szText1)
 		Else
