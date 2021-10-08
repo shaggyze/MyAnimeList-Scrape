@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_Compression=0
 #AutoIt3Wrapper_Res_Comment=MyAnimeList-JSON
 #AutoIt3Wrapper_Res_Description=MyAnimeList-JSON
-#AutoIt3Wrapper_Res_Fileversion=0.0.0.18
+#AutoIt3Wrapper_Res_Fileversion=0.0.0.19
 #AutoIt3Wrapper_Res_LegalCopyright=ShaggyZE
 #AutoIt3Wrapper_Res_requestedExecutionLevel=requireAdministrator
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -38,9 +38,9 @@
 #include <GUIMenu.au3>
 #include <GuiEdit.au3>
 #endregion Includes
-Global $szText, $szText, $szURL, $source, $sValue1, $sValue2, $szDelay, $Username, $Template, $Method, $anime_id, $anime_ids, $manga_id, $manga_ids, $id, $data, $read, $read2, $readtitle, $parseStr, $o, $mode, $sURL_Status, $latest_anime_id, $latest_manga_id
+Global $szText, $szText, $szURL, $source, $sValue1, $sValue2, $szDelay, $Username, $Template, $Method, $anime_id, $anime_ids, $manga_id, $manga_ids, $id, $data, $read, $read2, $readtitle[0], $parseStr, $o, $mode, $sURL_Status, $latest_anime_id, $latest_manga_id, $image, $title, $engtitle, $japtitle
 Global $oIE = _IECreateEmbedded()
-Global $version = "0.0.0.17"
+Global $version = "0.0.0.19"
 Local $hGUI = GUICreate("MyAnimeList-JSON v" & $version & "                                                          To Pause or Close Click the MAL Icon in your System Tray at the Bottom Right", 900, 470, -1, -1, -1)
 Local $hSysMenu = _GUICtrlMenu_GetSystemMenu($hGUI)
 _GUICtrlMenu_DeleteMenu($hSysMenu, $SC_CLOSE, False)
@@ -91,6 +91,8 @@ GUICtrlSetState($GUIActiveX, $GUI_HIDE)
 $szFile1 = "scrape.txt"
 $szFile2 = "mal.txt"
 $szFile3 = "scrape.html"
+$szFile4 = "jikan.html"
+$szFile5 = "jikan.txt"
 $x = @DesktopWidth - 200
 $y = @DesktopHeight - 62.5
 GUISetState(@SW_SHOW, $hGUI)
@@ -292,6 +294,9 @@ Func _ParseHTML($id)
 $parseStr =  StringReplace($parseStr, @LF, "")
 $parseStr =  StringReplace($parseStr, @CR, "")
 $parseStr =  StringReplace($parseStr, @CRLF, "")
+$parseStr =  StringReplace($parseStr, ' - MyAnimeList.net', "")
+$parseStr =  StringReplace($parseStr, ' | Manga', "")
+$parseStr =  StringReplace($parseStr, ' | Light Novel', "")
 $parseStr =  StringReplace($parseStr, '"', '')
 $parseStr =  StringReplace($parseStr, "'", '')
 $parseStr =  StringReplace($parseStr, "<br />", "")
@@ -362,12 +367,37 @@ While Number($sValue1) <= Number($sValue2)
 		$source = _INetGetSource($szURL)
 		FileDelete($szFile3)
 		FileWrite(@ScriptDir & "\" & $szFile3, $source)
+If Not StringInStr($Template,"[IMAGE]") = 0 Or Not StringInStr($Template,"[TITLE2]") = 0 Or Not StringInStr($Template,"[ENGTITLE]") = 0 Or Not StringInStr($Template,"[JAPTITLE]") = 0 Then
+$source2 = _INetGetSource("https://api.jikan.moe/v3/" & $list & "/" & $id)
+FileDelete($szFile4)
+FileWrite(@ScriptDir & "\" & $szFile4, $source2)
+Sleep (3000)
+EndIf
 		$read = FileRead(@ScriptDir & "\" & $szFile3)
-		If $list = "anime" then
-			_ScrapeMALAnimeSynopsis()
-		ElseIf $list = "manga" then
-			_ScrapeMALMangaSynopsis()
-		EndIf
+$szText1=""
+$szText1 = @CRLF & $Template
+If Not StringInStr($Template,"[IMAGE]") = 0 Then $image = _GetJIKAN('"image_url":"', '",', $list, $id)
+If Not StringInStr($Template,"[TITLE2]") = 0 Then $title = _GetJIKAN('"title":"', '",', $list, $id)
+If Not StringInStr($Template,"[ENGTITLE]") = 0 Then $engtitle = _GetJIKAN('"title_english":"', '",', $list, $id)
+If Not StringInStr($Template,"[JAPTITLE]") = 0 Then $japtitle = _GetJIKAN('"title_japanese":"', '",', $list, $id)
+$japtitle = Execute("'" & StringRegExpReplace($japtitle, "(\\u([[:xdigit:]]{4}))","' & ChrW(0x$2) & '") & "'")
+For $tagsIndex = 1 to IniRead("tags.ini","tags","count","")
+$readtitle = _StringBetween($read, IniRead("tags.ini",$tagsIndex,"before",""), IniRead("tags.ini",$tagsIndex,"after",""))
+If IsArray($readtitle) Then
+	_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
+	$parseStr =  FileRead($szFile1,FileGetSize($szFile1))
+	If $parseStr = "" Then ExitLoop
+	_ParseHTML($id)
+	$szText1 = StringReplace($szText1, "[ID]", $id)
+	$szText1 = StringReplace($szText1, "[TYPE]", $list)
+	$szText1 = StringReplace($szText1, "[TITLE2]", $title)
+	$szText1 = StringReplace($szText1, "[ENGTITLE]", $engtitle)
+	$szText1 = StringReplace($szText1, "[JAPTITLE]", $japtitle)
+	$szText1 = StringReplace($szText1, "[IMAGE]", $image)
+	$szText1 = StringReplace($szText1, "[" & IniRead("tags.ini",$tagsIndex,"name","") & "]", $parseStr)
+EndIf
+Next
+FileWrite($szFile2, $szText1)
 	Else
 		;$sValue1 = $sValue1 - 1
 		;MsgBox($MB_OK + $MB_ICONINFORMATION, 'SUCCESS', '$sURL_Status=' & $sURL_Status)
@@ -379,159 +409,45 @@ WEnd
 ToolTip("", $x, $y)
 EndFunc   ;==>_ScrapeMAL
 
-Func _ScrapeMALAnimeSynopsis()
-$readtitle = _StringBetween($read, '<p itemprop="description">', '</p>')
-If IsArray($readtitle) Then
-	_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
-	$parseStr =  FileRead($szFile1,FileGetSize($szFile1))
-	_ParseHTML($id)
-	$szText1 = @CRLF & $Template
-	$szText1 = StringReplace($szText1, "[ID]", $id)
-	$szText1 = StringReplace($szText1, "[TYPE]", "anime")
-	$szText1 = StringReplace($szText1, "[DESC]", $parseStr)
-	FileWrite($szFile2, $szText1)
-Else
-$readtitle = _StringBetween($read, 'Synopsis</h2></div>', '<')
-	If IsArray($readtitle) Then
-		_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
-		$parseStr =  FileRead($szFile1,FileGetSize($szFile1))
-		_ParseHTML($id)
-		$szText1 = @CRLF & $Template
-		$szText1 = StringReplace($szText1, "[ID]", $id)
-		$szText1 = StringReplace($szText1, "[TYPE]", "anime")
-		$szText1 = StringReplace($szText1, "[DESC]", $parseStr)
-		FileWrite($szFile2, $szText1)
-	Else
-		;MsgBox(0,$id , "Size: " & FileGetSize(@ScriptDir & "\" & $szFile3) & " Source: " & $source)
-		$sValue1 = $sValue1 - 1
-	EndIf
-EndIf
-EndFunc   ;==>_ScrapeMALAnimeSynopsis
-
-Func _ScrapeMALMangaSynopsis()
-$readtitle = _StringBetween($read, '<span itemprop="description">', '</span>')
-If IsArray($readtitle) Then
-	_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
-	$parseStr =  FileRead($szFile1,FileGetSize($szFile1))
-	_ParseHTML($id)
-	$szText1 = @CRLF & $Template
-	$szText1 = StringReplace($szText1, "[ID]", $id)
-	$szText1 = StringReplace($szText1, "[TYPE]", "manga")
-	$szText1 = StringReplace($szText1, "[DESC]", $parseStr)
-	FileWrite($szFile2, $szText1)
-Else
-	$readtitle = _StringBetween($read, '</div>Synopsis</h2>', '<')
-	If IsArray($readtitle) Then
-		_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
-		$parseStr =  FileRead($szFile1,FileGetSize($szFile1))
-		_ParseHTML($id)
-		$szText1 = @CRLF & $Template
-		$szText1 = StringReplace($szText1, "[ID]", $id)
-		$szText1 = StringReplace($szText1, "[TYPE]", "manga")
-		$szText1 = StringReplace($szText1, "[DESC]", $parseStr)
-		FileWrite($szFile2, $szText1)
-	Else
-		$readtitle = _StringBetween($read, '</div><h2>Synopsis</h2>', '<')
-		If IsArray($readtitle) Then
-			_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
-			$parseStr =  FileRead($szFile1,FileGetSize($szFile1))
-			_ParseHTML($id)
-			$szText1 = @CRLF & $Template
-			$szText1 = StringReplace($szText1, "[ID]", $id)
-			$szText1 = StringReplace($szText1, "[TYPE]", "manga")
-			$szText1 = StringReplace($szText1, "[DESC]", $parseStr)
-			FileWrite($szFile2, $szText1)
-		Else
-			;MsgBox(0,$id , "Size: " & FileGetSize(@ScriptDir & "\" & $szFile3) & " Source: " & $source)
-			$sValue1 = $sValue1 - 1
-		EndIf
-	EndIf
-EndIf
-EndFunc   ;==>_ScrapeMALMangaSynopsis
-
-Func _ScrapeloadjsonMAL($id,$list)
+Func _ScrapeloadjsonMAL($id, $list)
 ToolTip($id & " Scanned.", $x, $y)
 Sleep(GUICtrlRead($DelayINP))
 $source = _INetGetSource($szURL)
 FileDelete($szFile3)
 FileWrite(@ScriptDir & "\" & $szFile3, $source)
-$read = FileRead(@ScriptDir & "\" & $szFile3)
-If $list = "anime" then
-	_ScrapeloadjsonAnimeSynopsis($id)
-ElseIf $list = "manga" then
-	_ScrapeloadjsonMangaSynopsis($id)
+If Not StringInStr($Template,"[IMAGE]") = 0 Or Not StringInStr($Template,"[TITLE2]") = 0 Or Not StringInStr($Template,"[ENGTITLE]") = 0 Or Not StringInStr($Template,"[JAPTITLE]") = 0 Then
+$source2 = _INetGetSource("https://api.jikan.moe/v3/" & $list & "/" & $id)
+FileDelete($szFile4)
+FileWrite(@ScriptDir & "\" & $szFile4, $source2)
+Sleep (3000)
 EndIf
+$read = FileRead(@ScriptDir & "\" & $szFile3)
+$szText1=""
+$szText1 = @CRLF & $Template
+If Not StringInStr($Template,"[IMAGE]") = 0 Then $image = _GetJIKAN('"image_url":"', '",', $list, $id)
+If Not StringInStr($Template,"[TITLE2]") = 0 Then $title = _GetJIKAN('"title":"', '",', $list, $id)
+If Not StringInStr($Template,"[ENGTITLE]") = 0 Then $engtitle = _GetJIKAN('"title_english":"', '",', $list, $id)
+If Not StringInStr($Template,"[JAPTITLE]") = 0 Then $japtitle = _GetJIKAN('"title_japanese":"', '",', $list, $id)
+For $tagsIndex = 1 to IniRead("tags.ini","tags","count","")
+$readtitle = _StringBetween($read, IniRead("tags.ini",$tagsIndex,"before",""), IniRead("tags.ini",$tagsIndex,"after",""))
+If IsArray($readtitle) Then
+	_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
+	$parseStr =  FileRead($szFile1,FileGetSize($szFile1))
+	If $parseStr = "" Then ExitLoop
+	_ParseHTML($id)
+	$szText1 = StringReplace($szText1, "[ID]", $id)
+	$szText1 = StringReplace($szText1, "[TYPE]", $list)
+	$szText1 = StringReplace($szText1, "[TITLE2]", $title)
+	$szText1 = StringReplace($szText1, "[ENGTITLE]", $engtitle)
+	$szText1 = StringReplace($szText1, "[JAPTITLE]", $japtitle)
+	$szText1 = StringReplace($szText1, "[IMAGE]", $image)
+	$szText1 = StringReplace($szText1, "[" & IniRead("tags.ini",$tagsIndex,"name","") & "]", $parseStr)
+EndIf
+Next
+FileWrite($szFile2, $szText1)
 $read2 = FileRead(@ScriptDir & "\" & $szFile2)
 If GUICtrlRead($OutputCHK) = 4 Then GUICtrlSetData($OutputINP, $read2)
 EndFunc   ;==>_ScrapeloadjsonMAL
-
-Func _ScrapeloadjsonAnimeSynopsis($id)
-$readtitle = _StringBetween($read, '<p itemprop="description">', '</p>')
-If IsArray($readtitle) Then
-	_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
-	$parseStr =  FileRead($szFile1,FileGetSize($szFile1))
-	_ParseHTML($id)
-	$szText1 = @CRLF & $Template
-	$szText1 = StringReplace($szText1, "[ID]", $id)
-	$szText1 = StringReplace($szText1, "[TYPE]", "anime")
-	$szText1 = StringReplace($szText1, "[DESC]", $parseStr)
-	FileWrite($szFile2, $szText1)
-Else
-	$readtitle = _StringBetween($read, 'Synopsis</h2></div>', '<')
-	If IsArray($readtitle) Then
-		_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
-		$parseStr =  FileRead($szFile1,FileGetSize($szFile1))
-		_ParseHTML($id)
-		$szText1 = @CRLF & $Template
-		$szText1 = StringReplace($szText1, "[ID]", $id)
-		$szText1 = StringReplace($szText1, "[TYPE]", "anime")
-		$szText1 = StringReplace($szText1, "[DESC]", $parseStr)
-		FileWrite($szFile2, $szText1)
-	Else
-		;_ScrapeloadjsonMAL($id,$list)
-	EndIf
-EndIf
-EndFunc   ;==>_ScrapeloadjsonAnimeSynopsis
-
-Func _ScrapeloadjsonMangaSynopsis($id)
-$readtitle = _StringBetween($read, '<span itemprop="description">', '</span>') ;read URL and title from file
-If IsArray($readtitle) Then
-	_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
-	$parseStr =  FileRead($szFile1,FileGetSize($szFile1))
-	_ParseHTML($id)
-	$szText1 = @CRLF & $Template
-	$szText1 = StringReplace($szText1, "[ID]", $id)
-	$szText1 = StringReplace($szText1, "[TYPE]", "manga")
-	$szText1 = StringReplace($szText1, "[DESC]", $parseStr)
-	FileWrite($szFile2, $szText1)
-Else
-	$readtitle = _StringBetween($read, '</div>Synopsis</h2>', '<') ;read URL and title from file
-	If IsArray($readtitle) Then
-		_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
-		$parseStr =  FileRead($szFile1,FileGetSize($szFile1))
-		_ParseHTML($id)
-		$szText1 = @CRLF & $Template
-		$szText1 = StringReplace($szText1, "[ID]", $id)
-		$szText1 = StringReplace($szText1, "[TYPE]", "manga")
-		$szText1 = StringReplace($szText1, "[DESC]", $parseStr)
-		FileWrite($szFile2, $szText1)
-	Else
-		$readtitle = _StringBetween($read, '</div><h2>Synopsis</h2>', '<')
-		If IsArray($readtitle) Then
-			_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtitle)
-			$parseStr =  FileRead($szFile1,FileGetSize($szFile1))
-			_ParseHTML($id)
-			$szText1 = @CRLF & $Template
-			$szText1 = StringReplace($szText1, "[ID]", $id)
-			$szText1 = StringReplace($szText1, "[TYPE]", "manga")
-			$szText1 = StringReplace($szText1, "[DESC]", $parseStr)
-			FileWrite($szFile2, $szText1)
-		Else
-			;_ScrapeloadjsonMAL($id,$list)
-		EndIf
-	EndIf
-EndIf
-EndFunc   ;==>_ScrapeloadjsonMangaSynopsis
 
 Func _GetloadjsonAnimeMAL()
 Local $count = 0
@@ -628,6 +544,35 @@ ElseIf $list = "manga" Then
 		GUICtrlSetData($ButtonS, "Done (close)")
 	EndIf
 EndIf
+EndFunc   ;==>_BuildCSS
+
+Func _GetJIKAN($before, $after, $list, $id)
+$read2 = FileRead(@ScriptDir & "\" & $szFile4)
+$readtitle2 = _StringBetween($read2, $before, $after)
+If IsArray($readtitle2) Then
+_FileWriteFromArray(@ScriptDir & '\' & $szFile5, $readtitle2)
+$parseStr2 = FileRead($szFile5,FileGetSize($szFile5))
+$parseStr2 =  StringReplace($parseStr2, @LF, "")
+$parseStr2 =  StringReplace($parseStr2, @CR, "")
+$parseStr2 =  StringReplace($parseStr2, @CRLF, "")
+$parseStr2 =  StringReplace($parseStr2, "\/", "/")
+ElseIf $readtitle2 = "null" Then
+$parseStr2 = ""
+Else
+Sleep (6000)
+$read2 = FileRead(@ScriptDir & "\" & $szFile4)
+$readtitle2 = _StringBetween($read2, $before, $after)
+If IsArray($readtitle2) Then
+_FileWriteFromArray(@ScriptDir & '\' & $szFile5, $readtitle2)
+$parseStr2 = FileRead($szFile5,FileGetSize($szFile5))
+$parseStr2 =  StringReplace($parseStr2, @LF, "")
+$parseStr2 =  StringReplace($parseStr2, @CR, "")
+$parseStr2 =  StringReplace($parseStr2, @CRLF, "")
+Else
+$parseStr2 = "Increase Delay"
+EndIf
+EndIf
+Return $parseStr2
 EndFunc   ;==>_BuildCSS
 
 Func _CheckURLStatus()
