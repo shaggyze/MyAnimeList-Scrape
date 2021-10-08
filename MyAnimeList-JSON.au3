@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_Compression=0
 #AutoIt3Wrapper_Res_Comment=MyAnimeList-JSON
 #AutoIt3Wrapper_Res_Description=MyAnimeList-JSON
-#AutoIt3Wrapper_Res_Fileversion=0.0.0.19
+#AutoIt3Wrapper_Res_Fileversion=0.0.0.20
 #AutoIt3Wrapper_Res_LegalCopyright=ShaggyZE
 #AutoIt3Wrapper_Res_requestedExecutionLevel=requireAdministrator
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -40,7 +40,7 @@
 #endregion Includes
 Global $szText, $szText, $szURL, $source, $sValue1, $sValue2, $szDelay, $Username, $Template, $Method, $anime_id, $anime_ids, $manga_id, $manga_ids, $id, $data, $read, $read2, $readtitle[0], $parseStr, $o, $mode, $sURL_Status, $latest_anime_id, $latest_manga_id, $image, $title, $engtitle, $japtitle
 Global $oIE = _IECreateEmbedded()
-Global $version = "0.0.0.19"
+Global $version = "0.0.0.20"
 Local $hGUI = GUICreate("MyAnimeList-JSON v" & $version & "                                                          To Pause or Close Click the MAL Icon in your System Tray at the Bottom Right", 900, 470, -1, -1, -1)
 Local $hSysMenu = _GUICtrlMenu_GetSystemMenu($hGUI)
 _GUICtrlMenu_DeleteMenu($hSysMenu, $SC_CLOSE, False)
@@ -428,6 +428,7 @@ If Not StringInStr($Template,"[IMAGE]") = 0 Then $image = _GetJIKAN('"image_url"
 If Not StringInStr($Template,"[TITLE2]") = 0 Then $title = _GetJIKAN('"title":"', '",', $list, $id)
 If Not StringInStr($Template,"[ENGTITLE]") = 0 Then $engtitle = _GetJIKAN('"title_english":"', '",', $list, $id)
 If Not StringInStr($Template,"[JAPTITLE]") = 0 Then $japtitle = _GetJIKAN('"title_japanese":"', '",', $list, $id)
+$japtitle = Execute("'" & StringRegExpReplace($japtitle, "(\\u([[:xdigit:]]{4}))","' & ChrW(0x$2) & '") & "'")
 For $tagsIndex = 1 to IniRead("tags.ini","tags","count","")
 $readtitle = _StringBetween($read, IniRead("tags.ini",$tagsIndex,"before",""), IniRead("tags.ini",$tagsIndex,"after",""))
 If IsArray($readtitle) Then
