@@ -1,4 +1,4 @@
-version: 0.0.0.20
+version: 0.0.0.21
 clone_depth: 5
 skip_tags: true
 os: Visual Studio 2015
@@ -7,12 +7,12 @@ install:
 - choco install -y autoit
 
 build_script:
-- '"C:\Program Files (x86)\AutoIt3\Aut2Exe\Aut2exe.exe" /in MyAnimeList-JSON.au3 /out MyAnimeList-JSON.exe /icon mal.ico'
+- '"C:\Program Files (x86)\AutoIt3\Aut2Exe\Aut2exe.exe" /in MyAnimeList-Scrape.au3 /out MyAnimeList-Scrape.exe /icon mal.ico'
 
 artifacts:
 - path: '*.exe'
-  name: MyAnimeList-JSON
+  name: MyAnimeList-Scrape
 
 deploy:
 - provider: Environment
-  name: MyAnimeList-JSON
+  name: MyAnimeList-Scrape
