@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_Compression=0
 #AutoIt3Wrapper_Res_Comment=MyAnimeList-Scrape
 #AutoIt3Wrapper_Res_Description=MyAnimeList-Scrape
-#AutoIt3Wrapper_Res_Fileversion=0.0.0.21
+#AutoIt3Wrapper_Res_Fileversion=0.0.0.22
 #AutoIt3Wrapper_Res_LegalCopyright=ShaggyZE
 #AutoIt3Wrapper_Res_requestedExecutionLevel=requireAdministrator
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -37,14 +37,14 @@
 #include <GUIMenu.au3>
 #include <GuiEdit.au3>
 #endregion Includes
-Global $szText, $szText, $szURL, $source, $sValue1, $sValue2, $szDelay, $Username, $Template, $Method, $anime_id, $anime_ids, $manga_id, $manga_ids, $id, $data, $read, $read2, $readtags[0], $parseStr, $parseStr2, $o, $mode, $sURL_Status, $latest_anime_id, $latest_manga_id, $image, $title, $titleeng, $titleraw
+Global $szText, $szText, $szURL, $source, $sValue1, $sValue2, $szDelay, $Username, $Template, $Method, $anime_id, $anime_ids, $manga_id, $manga_ids, $id, $data, $read, $read2, $readtags[0], $parseStr, $parseStr2, $o, $mode, $sURL_Status, $latest_anime_id, $latest_manga_id, $image, $title, $titleeng, $titleraw, $sComboData = "", $Filtered = "False", $FilterText
 Global $oIE = _IECreateEmbedded()
-Global $version = "0.0.0.21"
+Global $version = "0.0.0.22"
 Local $hGUI = GUICreate("MyAnimeList-Scrape v" & $version & "                                                        To Pause or Close Click the MAL Icon in your System Tray at the Bottom Right", 900, 470, -1, -1, -1)
 Local $hSysMenu = _GUICtrlMenu_GetSystemMenu($hGUI)
 _GUICtrlMenu_DeleteMenu($hSysMenu, $SC_CLOSE, False)
 _GUICtrlMenu_DeleteMenu($hSysMenu, $SC_MAXIMIZE, False)
-GUISetIcon(@ScriptDir & "\mal.ico")
+GUISetIcon("mal.ico")
 $REGKEY="HKEY_CURRENT_USER\Software\ShaggyZE\MyAnimeList-Scrape\"
 $Username=REGREAD($REGKEY,"Username")
 $Template=REGREAD($REGKEY,"Template")
@@ -53,7 +53,7 @@ $ButtonS = GUICtrlCreateButton("Start", 5, 5, 65, 20)
 GUICtrlSetTip(-1, "Click to Start/Stop")
 $UsernameINP = GUICtrlCreateInput($Username, 80, 5, 100, 20)
 GUICtrlSetState (-1,$GUI_Disable)
-GUICtrlSetTip(-1, "Your Mal Username")
+GUICtrlSetTip(-1, "Your MAL Username")
 GUICtrlCreateLabel("Output", 225, 10, 65, 20)
 GUICtrlSetTip(-1, "This is where your CSS code will be")
 $Progress = GUICtrlCreateLabel("", 60, 40, 100, 20, $SS_CENTER, $WS_EX_TOPMOST)
@@ -73,12 +73,20 @@ GUICtrlSetTip(-1, "Method of scraping Data for CSS")
 $MethodCMB = GUICtrlCreateCombo("MAL-Anime", 5, 180, 150, 20, BitOR($CBS_DROPDOWNLIST, $CBS_AUTOHSCROLL, $WS_VSCROLL))
 GUICtrlSetData(-1, "MAL-Manga|User-Anime|User-Manga")
 GUICtrlSetTip(-1, "Method of scraping Data for CSS")
-GUICtrlCreateLabel("Start and Finish", 5, 210, 100, 20)
+GUICtrlCreateLabel("Start and Finish", 5, 210, 80, 20)
 GUICtrlSetTip(-1, "ID# from Start to Finsh")
 $FromINP = GUICtrlCreateInput("1", 5, 230, 40, 20)
 GUICtrlSetTip(-1, "Start ID#")
 $ToINP = GUICtrlCreateInput("", 45, 230, 40, 20)
 GUICtrlSetTip(-1, "Finish ID#")
+GUICtrlCreateLabel("Filter", 90, 210, 100, 20)
+GUICtrlSetTip(-1, "Filter output CSS")
+$ButtonAdd = GUICtrlCreateButton("Add", 90, 230, 30, 20)
+GUICtrlSetTip(-1, "Add filter to list")
+$FilterINP = GUICtrlCreateInput("", 120, 230, 40, 20)
+GUICtrlSetTip(-1, "Filter to be added")
+$FilterCMB = GUICtrlCreateCombo("", 165, 230, 60, 20, BitOR($CBS_DROPDOWNLIST, $CBS_AUTOHSCROLL, $WS_VSCROLL))
+GUICtrlSetTip(-1, "List of filters")
 $OutputINP = GUICtrlCreateEdit("Newly generated code will be output here.", 225, 25, 675, 445, $ES_MULTILINE)
 GUICtrlSetStyle($OutputINP, $WS_VSCROLL)
 ;_GUICtrlEdit_SetReadOnly(ControlGetHandle($hGUI,"",$OutputINP),True)
@@ -95,7 +103,7 @@ $szFile5 = "jikan.txt"
 $x = @DesktopWidth - 200
 $y = @DesktopHeight - 62.5
 GUISetState(@SW_SHOW, $hGUI)
-
+FileWrite($szFile4, "null")
 _GetLastestID("anime")
 
 GUIRegisterMsg($WM_COMMAND, "_MY_WM_COMMAND")
@@ -178,6 +186,19 @@ While 1
 				FileDelete($szFile3)
 			EndIf
 			EndIf
+		Case $ButtonAdd
+			$sComboSel = GUICtrlRead($FilterCMB)
+			$sComboData = GUICtrlRead($FilterINP)
+			If Not $sComboData = "" Then
+				If Not StringIsSpace($sComboData) Then
+					If Not StringInStr($sComboSel, "|" & $sComboData) Then
+						$sComboSel &= "|" & $sComboData
+						GUICtrlSetData($FilterCMB, $sComboData)
+						_GUICtrlComboBox_SetCurSel($FilterCMB, _GUICtrlComboBox_GetCount($FilterCMB)-1)
+						GUICtrlSetData($FilterINP, "")
+					EndIf
+				EndIf
+			EndIf
 		Case $MethodCMB
 			$Method = GUICtrlRead($MethodCMB)
 			If $Method = "MAL-Anime" Then
@@ -220,8 +241,8 @@ Else
 EndIf
 $source = _INetGetSource($szURL)
 FileDelete($szFile3)
-FileWrite(@ScriptDir & "\" & $szFile3, $source)
-$read = FileRead(@ScriptDir & "\" & $szFile3)
+FileWrite($szFile3, $source)
+$read = FileRead($szFile3)
 $readtags = _StringBetween($read, '<div id="sarea', '">')
 If $readtags[0] = "" Then $readtags[0] = "1"
 $sValue2 = $readtags[0]
@@ -245,11 +266,12 @@ Func _ParseHTML($id)
 $parseStr =  StringReplace($parseStr, @CRLF, " ")
 $parseStr =  StringReplace($parseStr, @LF, "")
 $parseStr =  StringReplace($parseStr, @CR, "")
-$parseStr =  StringReplace($parseStr, ' - MyAnimeList.net', "")
+$parseStr =  StringReplace($parseStr, ' - MyAnimeList.net ', "")
 $parseStr =  StringReplace($parseStr, ' | Manga', "")
 $parseStr =  StringReplace($parseStr, ' | Light Novel', "")
 $parseStr =  StringReplace($parseStr, '"', '')
 $parseStr =  StringReplace($parseStr, "'", '')
+$parseStr =  StringReplace($parseStr, "\u2019", "'")
 $parseStr =  StringReplace($parseStr, "<br />", "")
 $parseStr =  StringReplace($parseStr, "<i>", "")
 $parseStr =  StringReplace($parseStr, "</i>", "")
@@ -321,11 +343,11 @@ While Number($sValue1) <= Number($sValue2)
 		Sleep(GUICtrlRead($DelayINP))
 		$source = _INetGetSource($szURL)
 		FileDelete($szFile3)
-		FileWrite(@ScriptDir & "\" & $szFile3, $source)
+		FileWrite($szFile3, $source)
 If Not StringInStr($Template,"[IMGURL]") = 0 Or Not StringInStr($Template,"[TITLE2]") = 0 Or Not StringInStr($Template,"[TITLEENG]") = 0 Or Not StringInStr($Template,"[TITLERAW]") = 0 Then
 $source2 = _INetGetSource("https://api.jikan.moe/v3/" & $list & "/" & $id)
 FileDelete($szFile4)
-FileWrite(@ScriptDir & "\" & $szFile4, $source2)
+FileWrite($szFile4, $source2)
 Sleep(2000)
 EndIf
 While FileGetSize($szFile4) = 0
@@ -333,10 +355,10 @@ If Not StringInStr($Template,"[IMGURL]") = 0 Or Not StringInStr($Template,"[TITL
 Sleep (6000)
 $source2 = _INetGetSource("https://api.jikan.moe/v3/" & $list & "/" & $id)
 FileDelete($szFile4)
-FileWrite(@ScriptDir & "\" & $szFile4, $source2)
+FileWrite($szFile4, $source2)
 EndIf
 WEnd
-$read = FileRead(@ScriptDir & "\" & $szFile3)
+$read = FileRead($szFile3)
 $szText1=""
 $szText1 = @CRLF & $Template
 If Not StringInStr($Template,"[IMGURL]") = 0 Then $image = _GetJIKAN('"image_url":"', '",', $list, $id)
@@ -347,7 +369,7 @@ $titleraw = Execute("'" & StringRegExpReplace($titleraw, "(\\u([[:xdigit:]]{4}))
 For $tagsIndex = 1 to IniRead("maltags.ini","tags","count","")
 $readtags = _StringBetween($read, IniRead("maltags.ini",$tagsIndex,"before",""), IniRead("maltags.ini",$tagsIndex,"after",""))
 If IsArray($readtags) Then
-	_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtags)
+	_FileWriteFromArray($szFile1, $readtags)
 	$parseStr =  FileRead($szFile1,FileGetSize($szFile1))
 	If $parseStr = "" Then ExitLoop
 	_ParseHTML($id)
@@ -364,12 +386,21 @@ Next
 For $tagsIndex = 1 to IniRead("maltags.ini","tags","count","")
 	$szText1 = StringReplace($szText1, "[" & IniRead("maltags.ini",$tagsIndex,"name","") & "]", IniRead("maltags.ini",$tagsIndex,"notfound",""))
 Next
-FileWrite($szFile2, $szText1)
+If _GUICtrlComboBox_GetCount($FilterCMB) >= 1 Then
+	For $FilterLoop = 0 to _GUICtrlComboBox_GetCount($FilterCMB)-1
+		_GUICtrlComboBoxEx_GetItemText($FilterCMB,$FilterLoop,$FilterText)
+		If StringInStr($szText1,$FilterText) Then $Filtered="True"
+	Next
+	If $Filtered="True" Then FileWrite($szFile2, $szText1)
+Else
+	FileWrite($szFile2, $szText1)
+EndIf
+$Filtered="False"
 	Else
 		;$sValue1 = $sValue1 - 1
 		;MsgBox($MB_OK + $MB_ICONINFORMATION, 'SUCCESS', '$sURL_Status=' & $sURL_Status)
 	EndIf
-	$read2 = FileRead(@ScriptDir & "\" & $szFile2)
+	$read2 = FileRead($szFile2)
 	If GUICtrlRead($OutputCHK) = 4 Then GUICtrlSetData($OutputINP, $read2)
 	If Not $sURL_Status = "" Then $sValue1 = $sValue1 + 1
 WEnd
@@ -381,11 +412,11 @@ ToolTip(GUICtrlRead($Progress) & " Scanned.", $x, $y)
 Sleep(GUICtrlRead($DelayINP))
 $source = _INetGetSource($szURL)
 FileDelete($szFile3)
-FileWrite(@ScriptDir & "\" & $szFile3, $source)
+FileWrite($szFile3, $source)
 If Not StringInStr($Template,"[IMGURL]") = 0 Or Not StringInStr($Template,"[TITLE2]") = 0 Or Not StringInStr($Template,"[TITLEENG]") = 0 Or Not StringInStr($Template,"[TITLERAW]") = 0 Then
 $source2 = _INetGetSource("https://api.jikan.moe/v3/" & $list & "/" & $id)
 FileDelete($szFile4)
-FileWrite(@ScriptDir & "\" & $szFile4, $source2)
+FileWrite($szFile4, $source2)
 Sleep(2000)
 EndIf
 While FileGetSize($szFile4) = 0
@@ -393,10 +424,10 @@ If Not StringInStr($Template,"[IMGURL]") = 0 Or Not StringInStr($Template,"[TITL
 Sleep (6000)
 $source2 = _INetGetSource("https://api.jikan.moe/v3/" & $list & "/" & $id)
 FileDelete($szFile4)
-FileWrite(@ScriptDir & "\" & $szFile4, $source2)
+FileWrite($szFile4, $source2)
 EndIf
 WEnd
-$read = FileRead(@ScriptDir & "\" & $szFile3)
+$read = FileRead($szFile3)
 $szText1=""
 $szText1 = @CRLF & $Template
 If Not StringInStr($Template,"[IMGURL]") = 0 Then $image = _GetJIKAN('"image_url":"', '",', $list, $id)
@@ -407,7 +438,7 @@ $titleraw = Execute("'" & StringRegExpReplace($titleraw, "(\\u([[:xdigit:]]{4}))
 For $tagsIndex = 1 to IniRead("maltags.ini","tags","count","")
 $readtags = _StringBetween($read, IniRead("maltags.ini",$tagsIndex,"before",""), IniRead("maltags.ini",$tagsIndex,"after",""))
 If IsArray($readtags) Then
-	_FileWriteFromArray(@ScriptDir & '\' & $szFile1, $readtags)
+	_FileWriteFromArray($szFile1, $readtags)
 	$parseStr =  FileRead($szFile1,FileGetSize($szFile1))
 	If $parseStr = "" Then ExitLoop
 	_ParseHTML($id)
@@ -424,8 +455,17 @@ Next
 For $tagsIndex = 1 to IniRead("maltags.ini","tags","count","")
 	$szText1 = StringReplace($szText1, "[" & IniRead("maltags.ini",$tagsIndex,"name","") & "]", IniRead("maltags.ini",$tagsIndex,"notfound",""))
 Next
-FileWrite($szFile2, $szText1)
-$read2 = FileRead(@ScriptDir & "\" & $szFile2)
+If _GUICtrlComboBox_GetCount($FilterCMB) >= 1 Then
+	For $FilterLoop = 0 to _GUICtrlComboBox_GetCount($FilterCMB)-1
+		_GUICtrlComboBoxEx_GetItemText($FilterCMB,$FilterLoop,$FilterText)
+		If StringInStr($szText1,$FilterText) Then $Filtered="True"
+	Next
+	If $Filtered="True" Then FileWrite($szFile2, $szText1)
+Else
+	FileWrite($szFile2, $szText1)
+EndIf
+$Filtered="False"
+$read2 = FileRead($szFile2)
 If GUICtrlRead($OutputCHK) = 4 Then GUICtrlSetData($OutputINP, $read2)
 EndFunc   ;==>_ScrapeloadjsonMAL
 
@@ -527,10 +567,10 @@ EndIf
 EndFunc   ;==>_BuildCSS
 
 Func _GetJIKAN($before, $after, $list, $id)
-$read2 = FileRead(@ScriptDir & "\" & $szFile4)
+$read2 = FileRead($szFile4)
 $readtags2 = _StringBetween($read2, $before, $after)
 If IsArray($readtags2) Then
-_FileWriteFromArray(@ScriptDir & '\' & $szFile5, $readtags2)
+_FileWriteFromArray($szFile5, $readtags2)
 $parseStr2 = FileRead($szFile5,FileGetSize($szFile5))
 $parseStr2 =  StringReplace($parseStr2, @LF, "")
 $parseStr2 =  StringReplace($parseStr2, @CR, "")
