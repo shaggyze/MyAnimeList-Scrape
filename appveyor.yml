@@ -1,4 +1,4 @@
-version: 0.0.0.22
+version: 0.0.0.23
 clone_depth: 5
 skip_tags: true
 os: Visual Studio 2015
@@ -7,10 +7,14 @@ install:
 - choco install -y autoit
 
 build_script:
-- '"C:\Program Files (x86)\AutoIt3\Aut2Exe\Aut2exe.exe" /in MyAnimeList-Scrape.au3 /out MyAnimeList-Scrape.exe /icon mal.ico'
+- '"C:\ProgramData\chocolatey\bin\AutoIt3\Aut2Exe\Aut2exe.exe" /in MyAnimeList-Scrape.au3 /out MyAnimeList-Scrape.exe /icon mal.ico'
+
+after_build:
+7z a MyAnimeList-Scrape.zip %APPVEYOR_BUILD_FOLDER%\MyAnimeList-Scrape.exe
+7z a MyAnimeList-Scrape.zip %APPVEYOR_BUILD_FOLDER%\maltags.ini
 
 artifacts:
-- path: '*.exe'
+- path: 'MyAnimeList-Scrape.zip'
   name: MyAnimeList-Scrape
 
 deploy:
