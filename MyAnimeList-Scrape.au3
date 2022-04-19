@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_Compression=0
 #AutoIt3Wrapper_Res_Comment=MyAnimeList-Scrape
 #AutoIt3Wrapper_Res_Description=MyAnimeList-Scrape
-#AutoIt3Wrapper_Res_Fileversion=0.0.0.24
+#AutoIt3Wrapper_Res_Fileversion=0.0.0.25
 #AutoIt3Wrapper_Res_LegalCopyright=ShaggyZE
 #AutoIt3Wrapper_Res_requestedExecutionLevel=requireAdministrator
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -37,9 +37,10 @@
 #include <GUIMenu.au3>
 #include <GuiEdit.au3>
 #endregion Includes
-Global $szText, $szText, $szText1 = "", $szURL, $source, $sValue1, $sValue2, $szDelay, $Username, $Template, $Method, $anime_id, $anime_ids, $manga_id, $manga_ids, $id, $data, $read, $read2, $readtags[0], $parseStr, $parseStr2, $o, $mode, $sURL_Status, $latest_anime_id, $latest_manga_id, $image, $title, $titleeng, $titleraw, $sComboData = "", $Filtered = "False", $FilterText, $AllFilterText
+Global $szText, $szText, $szText1 = "", $szURL, $source, $sValue1, $sValue2, $szDelay, $Username, $Template, $Method, $anime_id, $ids, $manga_id, $manga_ids, $id, $data, $read, $read2, $readtags[0], $parseStr
+Global $parseStr2, $o, $mode, $sURL_Status, $latest_anime_id, $latest_manga_id, $image, $title, $titleeng, $titleraw, $sComboData = "", $Filtered = "False", $FilterText, $AllFilterText, $tag, $tags
 Global $oIE = _IECreateEmbedded()
-Global $version = "0.0.0.24"
+Global $version = "0.0.0.25"
 Local $hGUI = GUICreate("MyAnimeList-Scrape v" & $version & "                                                        To Pause or Close Click the MAL Icon in your System Tray at the Bottom Right", 900, 470, -1, -1, -1)
 Local $hSysMenu = _GUICtrlMenu_GetSystemMenu($hGUI)
 _GUICtrlMenu_DeleteMenu($hSysMenu, $SC_CLOSE, False)
@@ -168,7 +169,7 @@ While 1
 				FileWrite($szFile2, $szText)
 				GUICtrlSetData($OutputINP, "Gathering IDs...This may take awhile depending on the size of the list.")
 				ToolTip("Gathering IDs...", $x, $y)
-				_GetloadjsonAnimeMAL()
+				_GetloadjsonMAL("anime")
 				ToolTip("", $x, $y)
 				$mode = ""
 				FileDelete($szFile1)
@@ -183,7 +184,7 @@ While 1
 				FileWrite($szFile2, $szText)
 				GUICtrlSetData($OutputINP, "Gathering IDs...This may take awhile depending on the size of the list.")
 				ToolTip("Gathering IDs...", $x, $y)
-				_GetloadjsonMangaMAL()
+				_GetloadjsonMAL("manga")
 				ToolTip("", $x, $y)
 				$mode = ""
 				FileDelete($szFile1)
@@ -293,13 +294,22 @@ Func Parse($sTemp,$key)
 $res = StringRegExp($sTemp, '\W' & $key & '\W+(\d+)\W+\W+([^"]+)', 3)
 Global $array[UBound($res)/2][2]
 For $i = 0 to UBound($res)-1
-   If Mod($i, 2) = 0 Then
-       $array[$i/2][0] = $res[$i]
-   Else
-       $array[($i-1)/2][1] = $res[$i]
-EndIf
+	If Mod($i, 2) = 0 Then
+		$array[$i/2][0] = $res[$i]
+	Else
+		$array[($i-1)/2][1] = $res[$i]
+	EndIf
 Next
 ;_ArrayDisplay($array)
+EndFunc   ;==>Parse
+
+Func Parse1($sTemp,$key)
+$res = StringRegExp($sTemp, '\W' & $key & '\W+([^"]+)', 3)
+Global $array1[UBound($res)][1]
+For $i = 0 to UBound($res)-1
+	$array1[$i][0] = $res[$i]
+Next
+;_ArrayDisplay($array1)
 EndFunc   ;==>Parse
 
 Func _getData($o,$list)
@@ -393,7 +403,7 @@ WEnd
 ToolTip("", $x, $y)
 EndFunc   ;==>_ScrapeMAL
 
-Func _ScrapeloadjsonMAL($id, $list)
+Func _ScrapeloadjsonMAL($id, $list, $tag)
 ToolTip(GUICtrlRead($Progress) & " Scanned.", $x, $y)
 Sleep(GUICtrlRead($DelayINP))
 $source = _INetGetSource($szURL)
@@ -434,6 +444,9 @@ If IsArray($readtags) Then
 	$szText1 = StringReplace($szText1, "[TITLEENG]", $titleeng)
 	$szText1 = StringReplace($szText1, "[TITLERAW]", $titleraw)
 	$szText1 = StringReplace($szText1, "[IMGURL]", $image)
+	$tag = StringReplace($tag, "is_rewatching", "")
+	$tag = StringReplace($tag, "is_rereading", "")
+	$szText1 = StringReplace($szText1, "[TAGS]", $tag)
 	$szText1 = StringReplace($szText1, "[" & IniRead("maltags.ini",$tagsIndex,"name","") & "]", $parseStr)
 EndIf
 Next
@@ -455,75 +468,52 @@ $read2 = FileRead($szFile2)
 If GUICtrlRead($OutputCHK) = 4 Then GUICtrlSetData($OutputINP, $read2)
 EndFunc   ;==>_ScrapeloadjsonMAL
 
-Func _GetloadjsonAnimeMAL()
+Func _GetloadjsonMAL($list)
 Local $count = 0
 Do
 	$data = ""
-	_getData($o,"anime")
-	If Not $mode = "" Or $data = "[]" Then _BuildCSS("anime")
+	_getData($o,$list)
+	If Not $mode = "" Or $data = "[]" Then _BuildCSS($list)
 	;GUICtrlSetData($OutputINP, $data)
-	Parse($data,"anime_id")
-	If Not IsArray($array) Then ExitLoop 1
-	;_ArrayDisplay($array)
-	For $gather = 0 to UBound($array) - 1
-		$anime_id = $array[$gather][0]
-		If $anime_id  = "" Then ExitLoop 2
-		If $count = 0 Then
-			$anime_ids = $anime_id
-		Else
-			$anime_ids = $anime_ids & "," & $anime_id
-		EndIf
-		$count += 1
-		If @error Then ExitLoop 2
-	Next
-	$o += 300
-	ToolTip("Gathering IDs " & $o, $x, $y)
-	ConsoleWrite($count & " " & $o & @CRLF)
-	ConsoleWrite($anime_ids & @CRLF)
-	If @error Then ExitLoop 1
-Until $data = "[]"
-EndFunc   ;==>_GetloadjsonAnimeMAL
 
-Func _GetloadjsonMangaMAL()
-Local $count = 0
-Do
-	$data = ""
-	_getData($o,"manga")
-	If Not $mode = "" Or $data = "[]" Then _BuildCSS("manga")
-	;GUICtrlSetData($OutputINP, $data)
-	Parse($data,"manga_id")
+
+	Parse($data,$list & "_id")
+	Parse1($data,"tags")
 	If Not IsArray($array) Then ExitLoop 1
-	;_ArrayDisplay($array)
+	;_ArrayDisplay($array1)
 	For $gather = 0 to UBound($array) - 1
-		$manga_id = $array[$gather][0]
-		If $manga_id  = "" Then ExitLoop 2
+		$id = $array[$gather][0]
+		$tag = $array1[$gather][0]
+		If $id  = "" Then ExitLoop 2
 		If $count = 0 Then
-			$manga_ids = $manga_id
+			$ids = $id
+			$tags = $tag
 		Else
-			$manga_ids = $manga_ids & "," & $manga_id
+			$ids = $ids & "," & $id
+			$tags = $tags & ";" & $tag
 		EndIf
 		$count += 1
 		If @error Then ExitLoop 2
 	Next
+
 	$o += 300
 	ToolTip("Gathering IDs " & $o, $x, $y)
-	ConsoleWrite($count & " " & $o & @CRLF)
-	ConsoleWrite($manga_ids & @CRLF)
 	If @error Then ExitLoop 1
 Until $data = "[]"
-EndFunc   ;==>_GetloadjsonMangaMAL
+EndFunc   ;==>_GetloadjsonMAL
 
 Func _BuildCSS($list)
 $mode = "building"
 If $list = "anime" Then
-	Local $anime_ids_array = StringSplit($anime_ids,",")
+	Local $anime_ids_array = StringSplit($ids,",")
+	Local $tags_array = StringSplit($tags,";")
 	For $scrape = 1 to UBound($anime_ids_array) - 1
 		GUICtrlSetData($Progress, $scrape & " of " & UBound($anime_ids_array) - 1)
 		If $scrape = UBound($anime_ids_array) - 2 Then GUICtrlSetState($OutputCHK, 4)
 		$szURL = "https://myanimelist.net/anime/" & $anime_ids_array[$scrape]
 		_CheckURLStatus()
 		If $sURL_Status = "200" Then
-			_ScrapeloadjsonMAL($anime_ids_array[$scrape],"anime")
+			_ScrapeloadjsonMAL($anime_ids_array[$scrape],"anime",$tags_array[$scrape])
 		Else
 			$scrape = $scrape - 1
 		EndIf
@@ -533,14 +523,15 @@ If $list = "anime" Then
 		GUICtrlSetData($ButtonS, "Done (close)")
 	EndIf
 ElseIf $list = "manga" Then
-	Local $manga_ids_array = StringSplit($manga_ids,",")
+	Local $manga_ids_array = StringSplit($ids,",")
+	Local $tags_array = StringSplit($tags,";")
 	For $scrape = 1 to UBound($manga_ids_array) - 1
 		GUICtrlSetData($Progress, $scrape & " of " & UBound($manga_ids_array) - 1)
 		If $scrape = UBound($manga_ids_array) - 2 Then GUICtrlSetState($OutputCHK, 4)
 		$szURL = "https://myanimelist.net/manga/" & $manga_ids_array[$scrape]
 		_CheckURLStatus()
 		If $sURL_Status = "200" Then
-			_ScrapeloadjsonMAL($manga_ids_array[$scrape],"manga")
+			_ScrapeloadjsonMAL($manga_ids_array[$scrape],"manga",$tags_array[$scrape])
 		Else
 			$scrape = $scrape - 1
 		EndIf
