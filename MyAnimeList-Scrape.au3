@@ -4,12 +4,13 @@
 #AutoIt3Wrapper_Compression=0
 #AutoIt3Wrapper_Res_Comment=MyAnimeList-Scrape
 #AutoIt3Wrapper_Res_Description=MyAnimeList-Scrape
-#AutoIt3Wrapper_Res_Fileversion=0.0.0.25
+#AutoIt3Wrapper_Res_Fileversion=0.0.0.26
 #AutoIt3Wrapper_Res_LegalCopyright=ShaggyZE
 #AutoIt3Wrapper_Res_requestedExecutionLevel=requireAdministrator
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 #region Includes
 #include-once
+#include <AutoItConstants.au3>
 #include <Inet.au3>
 #include <Array.au3>
 #include <String.au3>
@@ -39,8 +40,9 @@
 #endregion Includes
 Global $szText, $szText, $szText1 = "", $szURL, $source, $sValue1, $sValue2, $szDelay, $Username, $Template, $Method, $anime_id, $ids, $manga_id, $manga_ids, $id, $data, $read, $read2, $readtags[0], $parseStr
 Global $parseStr2, $o, $mode, $sURL_Status, $latest_anime_id, $latest_manga_id, $image, $title, $titleeng, $titleraw, $sComboData = "", $Filtered = "False", $FilterText, $AllFilterText, $tag, $tags
+Global $Total, $Loop, $n, $sec = @SEC, $aETTF
 Global $oIE = _IECreateEmbedded()
-Global $version = "0.0.0.25"
+Global $version = "0.0.0.26"
 Local $hGUI = GUICreate("MyAnimeList-Scrape v" & $version & "                                                        To Pause or Close Click the MAL Icon in your System Tray at the Bottom Right", 900, 470, -1, -1, -1)
 Local $hSysMenu = _GUICtrlMenu_GetSystemMenu($hGUI)
 _GUICtrlMenu_DeleteMenu($hSysMenu, $SC_CLOSE, False)
@@ -57,7 +59,7 @@ GUICtrlSetState (-1,$GUI_Disable)
 GUICtrlSetTip(-1, "Your MAL Username")
 GUICtrlCreateLabel("Output", 225, 10, 65, 20)
 GUICtrlSetTip(-1, "This is where your CSS code will be")
-$Progress = GUICtrlCreateLabel("", 60, 40, 100, 20, $SS_CENTER, $WS_EX_TOPMOST)
+$Progress = GUICtrlCreateLabel("", 5, 40, 215, 20, $SS_CENTER, $WS_EX_TOPMOST)
 GUICtrlSetTip(-1, "")
 GUICtrlCreateLabel("Delay", 5, 60, 65, 20)
 GUICtrlSetTip(-1, "Milliseconds between Scraping MyAnimeList.net")
@@ -114,6 +116,7 @@ While 1
 	Switch $nMsg
 		;Start
 		Case $ButtonS
+
 			If GUICtrlRead($ButtonS) = "Start" Then
             GUICtrlSetData($ButtonS, "Stop (close)")
 			$Method = GUICtrlRead($MethodCMB)
@@ -169,7 +172,7 @@ While 1
 				FileWrite($szFile2, $szText)
 				GUICtrlSetData($OutputINP, "Gathering IDs...This may take awhile depending on the size of the list.")
 				ToolTip("Gathering IDs...", $x, $y)
-				_GetloadjsonMAL("anime")
+				_GetJSON("anime")
 				ToolTip("", $x, $y)
 				$mode = ""
 				FileDelete($szFile1)
@@ -184,7 +187,7 @@ While 1
 				FileWrite($szFile2, $szText)
 				GUICtrlSetData($OutputINP, "Gathering IDs...This may take awhile depending on the size of the list.")
 				ToolTip("Gathering IDs...", $x, $y)
-				_GetloadjsonMAL("manga")
+				_GetJSON("manga")
 				ToolTip("", $x, $y)
 				$mode = ""
 				FileDelete($szFile1)
@@ -324,10 +327,12 @@ EndFunc   ;==>getData
 
 Func _ScrapeMAL($list)
 GUICtrlSetData($OutputINP, "")
-ToolTip("Scanning from " & $sValue1 & " to " & $sValue2, $x, $y)
+_BeginTime()
+$Total = Number($sValue2) - Number($sValue1)
 While Number($sValue1) <= Number($sValue2)
+_CurrentTime()
 	$id = $sValue1
-	GUICtrlSetData($Progress, $sValue1 & " of " & $sValue2)
+	GUICtrlSetData($Progress, $sValue1 & " of " & $sValue2 & " - " & $aETTF[1])
 	$szURL = "https://myanimelist.net/" & $list & "/" & $id
     _CheckURLStatus()
 	If $sValue1 = $sValue2 Then
@@ -335,7 +340,7 @@ While Number($sValue1) <= Number($sValue2)
 			GUICtrlSetData($ButtonS, "Done (close)")
 	EndIf
 	If $sURL_Status = "200" Then
-		ToolTip(GUICtrlRead($Progress) & " Scanned.", $x, $y)
+		ToolTip($sValue1 & " of " & $sValue2 & " - " & $aETTF[1], $x, $y)
 		Sleep(GUICtrlRead($DelayINP))
 		$source = _INetGetSource($szURL)
 		FileDelete($szFile3)
@@ -400,11 +405,11 @@ While Number($sValue1) <= Number($sValue2)
 	If GUICtrlRead($OutputCHK) = 4 Then GUICtrlSetData($OutputINP, $read2)
 	If Not $sURL_Status = "" Then $sValue1 = $sValue1 + 1
 WEnd
+_EndTime()
 ToolTip("", $x, $y)
 EndFunc   ;==>_ScrapeMAL
 
-Func _ScrapeloadjsonMAL($id, $list, $tag)
-ToolTip(GUICtrlRead($Progress) & " Scanned.", $x, $y)
+Func _ScrapeJSON($id, $list, $tag)
 Sleep(GUICtrlRead($DelayINP))
 $source = _INetGetSource($szURL)
 FileDelete($szFile3)
@@ -446,6 +451,8 @@ If IsArray($readtags) Then
 	$szText1 = StringReplace($szText1, "[IMGURL]", $image)
 	$tag = StringReplace($tag, "is_rewatching", "")
 	$tag = StringReplace($tag, "is_rereading", "")
+	$tag = StringReplace($tag, "\", "")
+	$tag = StringReplace($tag, "'", "\'")
 	$szText1 = StringReplace($szText1, "[TAGS]", $tag)
 	$szText1 = StringReplace($szText1, "[" & IniRead("maltags.ini",$tagsIndex,"name","") & "]", $parseStr)
 EndIf
@@ -466,9 +473,9 @@ EndIf
 $Filtered="False"
 $read2 = FileRead($szFile2)
 If GUICtrlRead($OutputCHK) = 4 Then GUICtrlSetData($OutputINP, $read2)
-EndFunc   ;==>_ScrapeloadjsonMAL
+EndFunc   ;==>_ScrapeJSON
 
-Func _GetloadjsonMAL($list)
+Func _GetJSON($list)
 Local $count = 0
 Do
 	$data = ""
@@ -500,44 +507,53 @@ Do
 	ToolTip("Gathering IDs " & $o, $x, $y)
 	If @error Then ExitLoop 1
 Until $data = "[]"
-EndFunc   ;==>_GetloadjsonMAL
+EndFunc   ;==>_GetJSON
 
 Func _BuildCSS($list)
 $mode = "building"
+_BeginTime()
 If $list = "anime" Then
 	Local $anime_ids_array = StringSplit($ids,",")
 	Local $tags_array = StringSplit($tags,";")
-	For $scrape = 1 to UBound($anime_ids_array) - 1
-		GUICtrlSetData($Progress, $scrape & " of " & UBound($anime_ids_array) - 1)
-		If $scrape = UBound($anime_ids_array) - 2 Then GUICtrlSetState($OutputCHK, 4)
+	$Total = UBound($anime_ids_array)
+	For $scrape = 1 to $Total - 1
+		GUICtrlSetData($Progress, $scrape & " of " & ($Total - 1) & " - " & $aETTF[1])
+		ToolTip($scrape & " of " & ($Total - 1) & " - " & $aETTF[1], $x, $y)
+		_CurrentTime()
+		If $scrape = $Total - 2 Then GUICtrlSetState($OutputCHK, 4)
 		$szURL = "https://myanimelist.net/anime/" & $anime_ids_array[$scrape]
 		_CheckURLStatus()
 		If $sURL_Status = "200" Then
-			_ScrapeloadjsonMAL($anime_ids_array[$scrape],"anime",$tags_array[$scrape])
+			_ScrapeJSON($anime_ids_array[$scrape],"anime",$tags_array[$scrape])
 		Else
 			$scrape = $scrape - 1
 		EndIf
 	Next
-	If $scrape = UBound($anime_ids_array) Then
+	If $scrape = $Total Then
 		$mode = ""
+		_EndTime()
 		GUICtrlSetData($ButtonS, "Done (close)")
 	EndIf
 ElseIf $list = "manga" Then
 	Local $manga_ids_array = StringSplit($ids,",")
 	Local $tags_array = StringSplit($tags,";")
-	For $scrape = 1 to UBound($manga_ids_array) - 1
-		GUICtrlSetData($Progress, $scrape & " of " & UBound($manga_ids_array) - 1)
-		If $scrape = UBound($manga_ids_array) - 2 Then GUICtrlSetState($OutputCHK, 4)
+	$Total = UBound($manga_ids_array)
+	For $scrape = 1 to $Total - 1
+		GUICtrlSetData($Progress, $scrape & " of " & ($Total - 1) & " - " & $aETTF[1])
+		ToolTip($scrape & " of " & ($Total - 1) & " - " & $aETTF[1], $x, $y)
+		_CurrentTime()
+		If $scrape = $Total - 2 Then GUICtrlSetState($OutputCHK, 4)
 		$szURL = "https://myanimelist.net/manga/" & $manga_ids_array[$scrape]
 		_CheckURLStatus()
 		If $sURL_Status = "200" Then
-			_ScrapeloadjsonMAL($manga_ids_array[$scrape],"manga",$tags_array[$scrape])
+			_ScrapeJSON($manga_ids_array[$scrape],"manga",$tags_array[$scrape])
 		Else
 			$scrape = $scrape - 1
 		EndIf
 	Next
-	If $scrape = UBound($manga_ids_array) Then
+	If $scrape = $Total Then
 		$mode = ""
+		_EndTime()
 		GUICtrlSetData($ButtonS, "Done (close)")
 	EndIf
 EndIf
@@ -668,6 +684,7 @@ $parseStr =  StringReplace($parseStr, @CR, "")
 $parseStr =  StringReplace($parseStr, ' - MyAnimeList.net ', "")
 $parseStr =  StringReplace($parseStr, ' | Manga', "")
 $parseStr =  StringReplace($parseStr, ' | Light Novel', "")
+$parseStr =  StringReplace($parseStr, ' | Doujinshi', "")
 $parseStr =  StringReplace($parseStr, '"', '')
 $parseStr =  StringReplace($parseStr, "'", '')
 $parseStr =  StringReplace($parseStr, "\u2019", "'")
@@ -757,3 +774,44 @@ $szText1 = StringReplace($szText1, "   ", " ")
 $szText1 = StringReplace($szText1, "  ", " ")
 $szText1 = StringReplace($szText1, "  ", "")
 EndFunc   ;==>_FormatTEXT
+
+Func _EstimatedTime(ByRef $a, $iCurrentCount = "", $iTotalCount = "")
+    If $iCurrentCount & $iTotalCount = "" Then ; initialize
+        $a = ""
+        Dim $a[12]
+        $a[5] = TimerInit() ; handle for TimerDiff()
+        $a[0] = "00:00:00"
+        $a[1] = "00:00:00"
+        $a[2] = _NowCalc() ; starting date and time
+        $a[3] = ""
+        $a[4] = "0"
+    Else
+        If $iTotalCount = 0 Then Return False
+        If $iCurrentCount > $iTotalCount Then $iCurrentCount = $iTotalCount
+        _TicksToTime(Int(TimerDiff($a[5])), $a[6], $a[7], $a[8])
+        _TicksToTime(Int((TimerDiff($a[5]) / $iCurrentCount) * ($iTotalCount - $iCurrentCount)), $a[9], $a[10], $a[11])
+        $a[0] = StringFormat("%02i:%02i:%02i", $a[6], $a[7], $a[8]) ; elapsed time
+        $a[1] = StringFormat("%02i:%02i:%02i", $a[9], $a[10], $a[11]) ; estimated total time
+        $a[3] = _DateAdd("s", Int((TimerDiff($a[5]) / $iCurrentCount) * ($iTotalCount) / 1000), $a[2]) ; estimated date and time of completion
+        $a[4] = Int($iCurrentCount / $iTotalCount * 100) ; percentage done
+    EndIf
+    Return True
+EndFunc   ;==>_EstimatedTime
+
+Func _BeginTime()
+	_EstimatedTime($aETTF) ; called with just the data holder to init. it
+	ProgressOn("Progress", "Scraping MAL", $aETTF[4] & "%","50","50",BitOR($DLG_NOTONTOP, $DLG_MOVEABLE))
+	$Loop = "0"
+EndFunc    ;==>_BeginTime
+
+Func _CurrentTime()
+	$Loop += 1
+	$n = $Total - $Loop
+	_EstimatedTime($aETTF, $Total - $n, $Total)
+	ProgressSet($aETTF[4], $Loop & " of " & ($Total -1) & " - " & $aETTF[4] & "% - " & $aETTF[1] & " remains" & @CRLF & "Started on  " & $aETTF[2] & @CRLF & "Finished at " & $aETTF[3])
+EndFunc   ;==>_CurrentTime
+
+Func _EndTime()
+	ProgressOff()
+	GUICtrlSetData($Progress, ($Total - 1) & " of " & ($Total - 1) & " - 00:00:00")
+EndFunc   ;==>_EndTime
